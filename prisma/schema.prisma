@@ -1,0 +1,478 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  OWNER
+  FACTORY_MANAGER
+  SALES_MANAGER
+  SUPERVISOR
+  WORKER
+  ACCOUNTANT
+  CUSTOMER
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+}
+
+enum InquiryStage {
+  NEW
+  CONTACTED
+  QUALIFIED
+  QUOTED
+  WON
+  LOST
+}
+
+enum InquirySource {
+  INSTAGRAM
+  TIKTOK
+  SNAPCHAT
+  WHATSAPP
+  GOOGLE
+  REFERRAL
+  WALK_IN
+  OTHER
+}
+
+enum OrderStatus {
+  DRAFT
+  QUOTED
+  APPROVED
+  IN_PRODUCTION
+  QUALITY_CHECK
+  READY_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
+
+enum OrderEventType {
+  CREATED
+  STATUS_CHANGED
+  ASSIGNMENT_CREATED
+  ASSIGNMENT_STATUS_CHANGED
+  PORTAL_SHARED
+  PORTAL_APPROVED
+}
+
+enum AssignmentStatus {
+  PLANNED
+  IN_PROGRESS
+  BLOCKED
+  DONE
+}
+
+enum NotificationStatus {
+  UNREAD
+  READ
+}
+
+enum NotificationChannel {
+  IN_APP
+}
+
+enum NotificationType {
+  ORDER_OVERDUE
+  CRM_FOLLOW_UP_DUE
+  ASSIGNMENT_BLOCKED
+  CUSTOMER_APPROVAL_PENDING
+}
+
+enum ProjectStatus {
+  PLANNING
+  READY
+  IN_PROGRESS
+  ON_HOLD
+  BLOCKED
+  COMPLETED
+  CANCELLED
+}
+
+enum ProjectPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProjectTaskStatus {
+  BACKLOG
+  PLANNED_TODAY
+  IN_PROGRESS
+  WAITING_APPROVAL
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum TaskApprovalStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum WorkQueueStatus {
+  PLANNED
+  IN_PROGRESS
+  WAITING_APPROVAL
+  BLOCKED
+  DONE
+  CANCELLED
+}
+
+enum ProjectActivityType {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  TASK_CREATED
+  TASK_UPDATED
+  TASK_ADDED_TO_TODAY
+  QUEUE_REORDERED
+  QUEUE_STATUS_CHANGED
+  TASK_APPROVED
+  TASK_REJECTED
+}
+
+model Factory {
+  id          String        @id @default(cuid())
+  name        String
+  slug        String        @unique
+  timezone    String        @default("Asia/Riyadh")
+  currency    String        @default("SAR")
+  orderCodePrefix String    @default("DRM")
+  portalDisplayName String?
+  supportEmail String?
+  supportPhone String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  users       User[]
+  inquiries   Inquiry[]
+  customers   Customer[]
+  orders      Order[]
+  orderEvents OrderEvent[]
+  portalAccesses OrderPortalAccess[]
+  assignments Assignment[]
+  attendance  AttendanceRecord[]
+  notifications Notification[]
+  projects    Project[]
+  projectTasks ProjectTask[]
+  workQueueItems WorkQueueItem[]
+  projectActivities ProjectActivity[]
+}
+
+model User {
+  id             String        @id @default(cuid())
+  factoryId      String
+  email          String        @unique
+  passwordHash   String?
+  firstName      String
+  lastName       String
+  phone          String?
+  role           UserRole
+  status         UserStatus    @default(INVITED)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  factory        Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  sessions       Session[]
+  assignedInquiries Inquiry[] @relation("InquiryAssignee")
+  assignments    Assignment[]
+  ownedOrders    Order[]       @relation("OrderOwner")
+  createdOrders  Order[]       @relation("OrderCreatedBy")
+  orderEvents    OrderEvent[]  @relation("OrderEventActor")
+  sharedPortalAccesses OrderPortalAccess[] @relation("PortalAccessSharedBy")
+  attendance     AttendanceRecord[]
+  notifications  Notification[]
+  ownedProjects  Project[]       @relation("ProjectOwner")
+  assignedProjectTasks ProjectTask[] @relation("ProjectTaskAssignee")
+  approvedProjectTasks ProjectTask[] @relation("ProjectTaskApprover")
+  workQueueAssignments WorkQueueItem[] @relation("WorkQueueAssignee")
+  projectActivities ProjectActivity[] @relation("ProjectActivityActor")
+
+  @@index([factoryId, role])
+}
+
+model Inquiry {
+  id             String        @id @default(cuid())
+  factoryId      String
+  assignedToId   String?
+  name           String
+  phone          String
+  email          String?
+  source         InquirySource @default(OTHER)
+  stage          InquiryStage  @default(NEW)
+  interest       String?
+  budgetAmount   Decimal?      @db.Decimal(12, 2)
+  nextFollowUpAt DateTime?
+  notes          String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  factory        Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  assignedTo     User?         @relation("InquiryAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, stage, nextFollowUpAt])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+}
+
+model Customer {
+  id           String   @id @default(cuid())
+  factoryId    String
+  name         String
+  email        String?
+  phone        String?
+  city         String?
+  district     String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  factory      Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@index([factoryId, name])
+}
+
+model Order {
+  id             String        @id @default(cuid())
+  factoryId      String
+  customerId     String
+  ownerId        String?
+  createdById    String?
+  code           String
+  title          String
+  description    String?
+  status         OrderStatus   @default(DRAFT)
+  quotedAmount   Decimal?      @db.Decimal(12, 2)
+  targetDate     DateTime?
+  approvedAt     DateTime?
+  customerApprovedAt DateTime?
+  customerApprovalNote String?
+  deliveredAt    DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  factory        Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  customer       Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  owner          User?         @relation("OrderOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  createdBy      User?         @relation("OrderCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  portalAccess   OrderPortalAccess?
+  events         OrderEvent[]
+  assignments    Assignment[]
+  projects       Project[]
+
+  @@index([factoryId, status])
+  @@unique([factoryId, code])
+  @@index([customerId])
+}
+
+model OrderPortalAccess {
+  id          String   @id @default(cuid())
+  factoryId   String
+  orderId     String   @unique
+  sharedById  String?
+  lastViewedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  factory     Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  order       Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sharedBy    User?    @relation("PortalAccessSharedBy", fields: [sharedById], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, createdAt])
+}
+
+model OrderEvent {
+  id         String         @id @default(cuid())
+  factoryId  String
+  orderId    String
+  actorId    String?
+  type       OrderEventType
+  fromStatus OrderStatus?
+  toStatus   OrderStatus?
+  note       String?
+  createdAt  DateTime       @default(now())
+  factory    Factory        @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  order      Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  actor      User?          @relation("OrderEventActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, orderId, createdAt])
+}
+
+model Assignment {
+  id             String            @id @default(cuid())
+  factoryId      String
+  orderId        String
+  workerId       String
+  station        String
+  status         AssignmentStatus  @default(PLANNED)
+  scheduledFor   DateTime?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  notes          String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  factory        Factory           @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  order          Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  worker         User              @relation(fields: [workerId], references: [id], onDelete: Restrict)
+
+  @@index([factoryId, status, scheduledFor])
+  @@index([orderId])
+  @@index([workerId])
+}
+
+model AttendanceRecord {
+  id         String   @id @default(cuid())
+  factoryId  String
+  userId     String
+  date       DateTime
+  clockInAt  DateTime?
+  clockOutAt DateTime?
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  factory    Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([factoryId, userId, date])
+  @@index([factoryId, date])
+}
+
+model Notification {
+  id         String              @id @default(cuid())
+  factoryId  String
+  userId     String
+  type       NotificationType
+  channel    NotificationChannel @default(IN_APP)
+  status     NotificationStatus  @default(UNREAD)
+  dedupeKey  String
+  title      String
+  message    String
+  href       String?
+  entityType String?
+  entityId   String?
+  readAt     DateTime?
+  resolvedAt DateTime?
+  createdAt  DateTime            @default(now())
+  updatedAt  DateTime            @updatedAt
+  factory    Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([factoryId, userId, status, resolvedAt, createdAt])
+  @@index([factoryId, userId, type, resolvedAt])
+}
+
+model Project {
+  id          String          @id @default(cuid())
+  factoryId   String
+  orderId     String?
+  ownerUserId String?
+  code        String
+  name        String
+  description String?
+  status      ProjectStatus   @default(PLANNING)
+  priority    ProjectPriority @default(MEDIUM)
+  startDate   DateTime?
+  dueDate     DateTime?
+  completedAt DateTime?
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  factory     Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  order       Order?          @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  owner       User?           @relation("ProjectOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  tasks       ProjectTask[]
+  activities  ProjectActivity[]
+
+  @@unique([factoryId, code])
+  @@index([factoryId, status, priority, dueDate])
+  @@index([orderId])
+  @@index([ownerUserId])
+}
+
+model ProjectTask {
+  id               String             @id @default(cuid())
+  factoryId        String
+  projectId        String
+  assignedToUserId String?
+  approvedByUserId String?
+  title            String
+  description      String?
+  status           ProjectTaskStatus  @default(BACKLOG)
+  priority         ProjectPriority    @default(MEDIUM)
+  requiresApproval Boolean            @default(false)
+  approvalStatus   TaskApprovalStatus @default(NOT_REQUIRED)
+  dueDate          DateTime?
+  completedAt      DateTime?
+  approvedAt       DateTime?
+  rejectedReason   String?
+  sortOrder        Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  factory          Factory            @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project          Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  assignedTo       User?              @relation("ProjectTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  approvedBy       User?              @relation("ProjectTaskApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  queueItems       WorkQueueItem[]
+  activities       ProjectActivity[]
+
+  @@index([factoryId, projectId, status, priority])
+  @@index([assignedToUserId])
+  @@index([approvedByUserId])
+}
+
+model WorkQueueItem {
+  id               String          @id @default(cuid())
+  factoryId        String
+  taskId           String
+  assignedToUserId String?
+  workDate         DateTime
+  position         Int
+  status           WorkQueueStatus @default(PLANNED)
+  startedAt        DateTime?
+  completedAt      DateTime?
+  notes            String?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  factory          Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  task             ProjectTask     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  assignedTo       User?           @relation("WorkQueueAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+
+  @@unique([taskId, workDate])
+  @@unique([factoryId, workDate, position])
+  @@index([factoryId, workDate, status, position])
+  @@index([assignedToUserId])
+}
+
+model ProjectActivity {
+  id          String              @id @default(cuid())
+  factoryId   String
+  projectId   String
+  taskId      String?
+  actorUserId String?
+  type        ProjectActivityType
+  message     String
+  createdAt   DateTime            @default(now())
+  factory     Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task        ProjectTask?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  actor       User?               @relation("ProjectActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, projectId, createdAt])
+  @@index([taskId])
+  @@index([actorUserId])
+}

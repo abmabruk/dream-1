@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: dream-1-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dream_1
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - dream_1_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  dream_1_postgres_data:
