@@ -142,6 +142,88 @@ export class ProjectRepository {
     }));
   }
 
+  async listDetailedByFactory(factoryId: string, workDate: string): Promise<ProjectDetail[]> {
+    const start = toBoardDate(workDate);
+    const end = addDays(start, 1);
+
+    const projects = await db.project.findMany({
+      where: {
+        factoryId,
+        status: { notIn: [ProjectStatus.COMPLETED, ProjectStatus.CANCELLED] },
+      },
+      include: {
+        owner: true,
+        order: { select: { code: true } },
+        tasks: {
+          include: {
+            assignedTo: true,
+            approvedBy: true,
+            queueItems: {
+              where: { workDate: { gte: start, lt: end } },
+              include: { assignedTo: true },
+              orderBy: { position: "asc" },
+              take: 1,
+            },
+          },
+          orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        },
+        activities: {
+          include: { actor: true },
+          orderBy: { createdAt: "desc" },
+          take: 10,
+        },
+      },
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+    });
+
+    return projects.map((project) => ({
+      id: project.id,
+      code: project.code,
+      name: project.name,
+      description: project.description,
+      status: project.status,
+      priority: project.priority,
+      startDate: project.startDate?.toISOString() ?? null,
+      dueDate: project.dueDate?.toISOString() ?? null,
+      completedAt: project.completedAt?.toISOString() ?? null,
+      notes: project.notes,
+      ownerName: displayName(project.owner),
+      orderCode: project.order?.code ?? null,
+      tasks: project.tasks.map((task) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        priority: task.priority,
+        requiresApproval: task.requiresApproval,
+        approvalStatus: task.approvalStatus,
+        dueDate: task.dueDate?.toISOString() ?? null,
+        completedAt: task.completedAt?.toISOString() ?? null,
+        assignedToUserId: task.assignedToUserId,
+        assignedToName: displayName(task.assignedTo),
+        approvedByName: displayName(task.approvedBy),
+        rejectedReason: task.rejectedReason,
+        sortOrder: task.sortOrder,
+        todayQueueItem: task.queueItems[0]
+          ? {
+              id: task.queueItems[0].id,
+              status: task.queueItems[0].status,
+              position: task.queueItems[0].position,
+              assignedToName: displayName(task.queueItems[0].assignedTo),
+              notes: task.queueItems[0].notes,
+            }
+          : null,
+      })),
+      activities: project.activities.map((activity) => ({
+        id: activity.id,
+        type: activity.type,
+        message: activity.message,
+        actorName: displayName(activity.actor),
+        createdAt: activity.createdAt.toISOString(),
+      })),
+    }));
+  }
+
   async getById(
     factoryId: string,
     projectId: string,

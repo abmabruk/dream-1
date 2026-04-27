@@ -1,0 +1,1418 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   Grid Commander — Dark Widget Dashboard
+   ══════════════════════════════════════════════════════════════════════════ */
+
+.gc-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #1a1a1a;
+  color: #e8e0d4;
+}
+
+/* ── Top Bar ─────────────────────────────────────────────────────────────── */
+.gc-topbar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.25rem;
+  height: 56px;
+  background: #1e1e1e;
+  border-bottom: 1px solid #333;
+}
+
+.gc-topbar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gc-factory-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #f0ebe3;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.gc-topbar-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #7a7060;
+}
+
+.gc-clock {
+  font-size: 1.6rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: #f0ebe3;
+  letter-spacing: -0.02em;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.gc-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #14b8a6;
+  animation: gc-pulse-anim 1.5s ease-out forwards;
+}
+
+@keyframes gc-pulse-anim {
+  0% { opacity: 1; box-shadow: 0 0 0 0 rgba(20,184,166,0.5); }
+  100% { opacity: 0; box-shadow: 0 0 0 12px rgba(20,184,166,0); }
+}
+
+.gc-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-inline-start: auto;
+}
+
+.gc-topbar-btn {
+  height: 32px;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #e8e0d4;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  transition: background 150ms, border-color 150ms;
+}
+.gc-topbar-btn:hover {
+  background: #333;
+  border-color: #14b8a6;
+}
+
+.gc-preset-select {
+  height: 32px;
+  padding: 0 0.6rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #e8e0d4;
+  cursor: pointer;
+  outline: none;
+}
+.gc-preset-select option {
+  background: #2a2a2a;
+  color: #e8e0d4;
+}
+
+/* ── Widget Grid ─────────────────────────────────────────────────────────── */
+.gc-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: minmax(180px, 1fr);
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ── Widget Card ─────────────────────────────────────────────────────────── */
+.gc-widget {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -1px -1px 4px rgba(255,255,255,0.02);
+  transition: box-shadow 200ms;
+  min-height: 0;
+}
+.gc-widget:hover {
+  box-shadow: 4px 4px 16px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03);
+}
+
+.gc-drag-overlay {
+  opacity: 0.85;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+
+.gc-widget-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.75rem;
+  border-top: 3px solid #14b8a6;
+  background: #282828;
+  cursor: grab;
+  user-select: none;
+}
+
+.gc-widget-header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gc-widget-accent-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gc-widget-title {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #e8e0d4;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gc-widget-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.gc-widget-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #7a7060;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms, color 120ms;
+}
+.gc-widget-btn:hover {
+  background: #333;
+  color: #e8e0d4;
+}
+
+.gc-widget-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ── Resize Menu ─────────────────────────────────────────────────────────── */
+.gc-resize-menu {
+  position: absolute;
+  top: 100%;
+  inset-inline-end: 0;
+  margin-top: 4px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 0.5rem;
+  padding: 4px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.gc-resize-option {
+  padding: 4px 12px;
+  border: none;
+  background: transparent;
+  color: #e8e0d4;
+  font-size: 0.7rem;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  text-align: start;
+}
+.gc-resize-option:hover {
+  background: #14b8a644;
+}
+
+/* ── Shared Styles ───────────────────────────────────────────────────────── */
+.gc-empty {
+  font-size: 0.75rem;
+  color: #7a7060;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.gc-tag {
+  font-size: 0.62rem;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 1px 5px;
+}
+
+/* ── Kanban (Today's Queue) ──────────────────────────────────────────────── */
+.gc-kanban {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-lane {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.gc-lane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.gc-lane-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #9e9080;
+}
+
+.gc-lane-count {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+.gc-lane-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+}
+
+.gc-queue-card {
+  border-inline-start: 3px solid;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: #282828;
+  transition: background 120ms;
+}
+.gc-queue-card:hover {
+  background: #303030;
+}
+
+.gc-queue-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.3rem;
+}
+
+.gc-queue-card-title {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #e8e0d4;
+  line-height: 1.35;
+}
+
+.gc-queue-card-priority {
+  font-size: 0.75rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.gc-queue-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.gc-queue-card-worker {
+  font-size: 0.65rem;
+  color: #9e9080;
+}
+
+.gc-queue-card-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.gc-action-btn {
+  height: 22px;
+  padding: 0 0.5rem;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.gc-action-start {
+  background: #14b8a622;
+  color: #14b8a6;
+}
+.gc-action-start:hover {
+  background: #14b8a644;
+}
+
+.gc-action-complete {
+  background: #14b8a6;
+  color: #fff;
+}
+.gc-action-complete:hover {
+  background: #0f9a8d;
+}
+
+.gc-action-back {
+  background: #44403c44;
+  color: #9e9080;
+}
+.gc-action-back:hover {
+  background: #44403c88;
+}
+
+.gc-done-check {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #10b981;
+}
+
+/* ── Projects Widget ─────────────────────────────────────────────────────── */
+.gc-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.gc-project-item {
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.gc-project-header {
+  display: flex;
+  align-items: center;
+  padding: 0.55rem 0.65rem;
+  cursor: pointer;
+  background: #282828;
+  transition: background 120ms;
+}
+.gc-project-header:hover {
+  background: #303030;
+}
+
+.gc-project-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gc-project-top-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.gc-project-code {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #14b8a6;
+}
+
+.gc-priority-badge {
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.gc-project-status {
+  font-size: 0.6rem;
+  color: #7a7060;
+  margin-inline-start: auto;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gc-project-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e8e0d4;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gc-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 5px;
+}
+
+.gc-progress-bar {
+  flex: 1;
+  height: 4px;
+  background: #333;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.gc-progress-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s;
+}
+
+.gc-progress-text {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #9e9080;
+  min-width: 28px;
+  text-align: end;
+}
+
+.gc-chevron {
+  color: #7a7060;
+  flex-shrink: 0;
+  transition: transform 200ms;
+}
+
+.gc-project-tasks {
+  background: #1e1e1e;
+  padding: 4px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gc-project-task-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 4px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 120ms;
+}
+.gc-project-task-row:hover {
+  background: #282828;
+}
+
+.gc-task-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gc-task-title-sm {
+  font-size: 0.72rem;
+  color: #e8e0d4;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gc-task-assignee-sm {
+  font-size: 0.62rem;
+  color: #7a7060;
+  flex-shrink: 0;
+}
+
+/* ── Alerts Widget ───────────────────────────────────────────────────────── */
+.gc-alerts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+}
+
+.gc-alert-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+}
+
+.gc-alert-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.gc-alert-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gc-alert-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gc-alert-desc {
+  font-size: 0.68rem;
+  color: #9e9080;
+  margin-top: 2px;
+  line-height: 1.3;
+}
+
+.gc-alert-project {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #7a7060;
+  margin-top: 3px;
+  display: inline-block;
+}
+
+.gc-alert-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+  align-self: center;
+}
+
+/* ── Team Status Widget ──────────────────────────────────────────────────── */
+.gc-team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.gc-team-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.5rem;
+  background: #282828;
+  transition: background 120ms;
+}
+.gc-team-row:hover {
+  background: #303030;
+}
+
+.gc-team-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: white;
+  flex-shrink: 0;
+}
+
+.gc-team-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.gc-team-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.gc-team-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e8e0d4;
+}
+
+.gc-team-role {
+  font-size: 0.6rem;
+  color: #7a7060;
+}
+
+.gc-availability-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-inline-start: auto;
+  flex-shrink: 0;
+}
+
+.gc-team-stats {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 2px;
+}
+
+.gc-team-stat {
+  font-size: 0.6rem;
+  color: #9e9080;
+}
+
+.gc-stat-active {
+  color: #14b8a6;
+}
+
+.gc-stat-done {
+  color: #10b981;
+}
+
+.gc-team-bar {
+  width: 100%;
+  height: 3px;
+  background: #333;
+  border-radius: 9999px;
+  margin-top: 4px;
+  overflow: hidden;
+}
+
+.gc-team-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  background: #14b8a6;
+  transition: width 0.4s;
+}
+
+/* ── Quick Notes Widget ──────────────────────────────────────────────────── */
+.gc-notes {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.gc-notes-textarea {
+  flex: 1;
+  width: 100%;
+  padding: 0.65rem;
+  background: transparent;
+  border: none;
+  outline: none;
+  resize: none;
+  color: #e8e0d4;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  font-family: inherit;
+}
+.gc-notes-textarea::placeholder {
+  color: #7a7060;
+}
+
+/* ── Calendar Widget ─────────────────────────────────────────────────────── */
+.gc-calendar {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 8px;
+  height: 100%;
+  min-height: 0;
+}
+
+.gc-cal-day {
+  display: flex;
+  flex-direction: column;
+  background: #1e1e1e;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.gc-cal-today {
+  border: 1px solid #14b8a644;
+  background: #1e2a28;
+}
+
+.gc-cal-day-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.gc-cal-day-name {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #9e9080;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.gc-cal-day-num {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #e8e0d4;
+}
+
+.gc-cal-tasks {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+}
+
+.gc-cal-task {
+  border-inline-start: 2px solid;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: #28282866;
+}
+
+.gc-cal-task-title {
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #e8e0d4;
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gc-cal-task-code {
+  font-size: 0.55rem;
+  color: #7a7060;
+}
+
+.gc-cal-empty {
+  font-size: 0.62rem;
+  color: #44403c;
+  text-align: center;
+  padding: 4px;
+}
+
+/* ── Activity Feed Widget ────────────────────────────────────────────────── */
+.gc-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.gc-feed-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  transition: background 120ms;
+}
+.gc-feed-item:hover {
+  background: #282828;
+}
+
+.gc-feed-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.gc-feed-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.gc-feed-msg {
+  font-size: 0.75rem;
+  color: #e8e0d4;
+  line-height: 1.35;
+}
+
+.gc-feed-time {
+  font-size: 0.6rem;
+  color: #7a7060;
+}
+
+/* ── Detail Sheet (Slide-out) ────────────────────────────────────────────── */
+.gc-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.gc-sheet {
+  width: 400px;
+  max-width: 90vw;
+  background: #222;
+  border-inline-start: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: gc-sheet-in 200ms ease-out;
+}
+
+@keyframes gc-sheet-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+.gc-sheet-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid #333;
+  flex-shrink: 0;
+}
+
+.gc-sheet-code {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #14b8a6;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.gc-sheet-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #e8e0d4;
+  margin-top: 3px;
+}
+
+.gc-sheet-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.gc-sheet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gc-sheet-label {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #7a7060;
+}
+
+.gc-sheet-value {
+  font-size: 0.82rem;
+  color: #e8e0d4;
+}
+
+.gc-sheet-section {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9e9080;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #333;
+}
+
+.gc-sheet-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gc-sheet-task {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.4rem;
+  background: #282828;
+}
+
+.gc-sheet-task-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #e8e0d4;
+}
+
+.gc-sheet-task-meta {
+  font-size: 0.62rem;
+  color: #7a7060;
+  margin-top: 1px;
+}
+
+/* ── Add Widget Dialog ───────────────────────────────────────────────────── */
+.gc-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gc-dialog {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  width: 320px;
+  max-width: 90vw;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  animation: gc-dialog-in 200ms ease-out;
+}
+
+@keyframes gc-dialog-in {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.gc-dialog-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e8e0d4;
+  margin-bottom: 0.75rem;
+}
+
+.gc-dialog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.gc-dialog-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid #333;
+  background: #222;
+  color: #e8e0d4;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms;
+  width: 100%;
+  text-align: start;
+}
+.gc-dialog-item:hover {
+  background: #303030;
+  border-color: #14b8a644;
+}
+
+/* ── Form Dialog ── */
+.gc-form-dialog {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  width: 420px;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  animation: gc-dialog-in 200ms ease-out;
+}
+.gc-form-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.gc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.gc-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+.gc-form-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.gc-form-input {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  color: #e8e0d4;
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 150ms;
+}
+.gc-form-input:focus {
+  border-color: #14b8a6;
+}
+.gc-form-textarea {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  color: #e8e0d4;
+  font-size: 0.78rem;
+  resize: vertical;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 150ms;
+}
+.gc-form-textarea:focus {
+  border-color: #14b8a6;
+}
+.gc-form-row {
+  display: flex;
+  gap: 0.5rem;
+}
+.gc-form-priority-row {
+  display: flex;
+  gap: 4px;
+}
+.gc-form-priority-btn {
+  flex: 1;
+  padding: 0.35rem 0.4rem;
+  border: 1px solid #333;
+  border-radius: 0.35rem;
+  background: #1a1a1a;
+  color: #999;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.gc-form-priority-btn:hover {
+  border-color: #555;
+  color: #e8e0d4;
+}
+.gc-form-priority-active {
+  border-color: #14b8a6;
+  background: #14b8a618;
+  color: #14b8a6;
+}
+.gc-form-error {
+  color: #ef4444;
+  font-size: 0.72rem;
+  margin: 0;
+}
+.gc-form-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+.gc-form-cancel-btn {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #333;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #999;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 120ms;
+}
+.gc-form-cancel-btn:hover {
+  color: #e8e0d4;
+  border-color: #555;
+}
+.gc-form-submit-btn {
+  padding: 0.4rem 0.85rem;
+  border: none;
+  border-radius: 0.4rem;
+  background: #14b8a6;
+  color: #111;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 120ms;
+}
+.gc-form-submit-btn:hover {
+  opacity: 0.85;
+}
+.gc-form-submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.gc-form-select {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  color: #e8e0d4;
+  font-size: 0.78rem;
+  outline: none;
+  transition: border-color 150ms;
+}
+.gc-form-select:focus {
+  border-color: #14b8a6;
+}
+
+/* ── Inline Add Task Form ── */
+.gc-inline-form {
+  display: flex;
+  gap: 4px;
+  padding: 0.4rem 0.5rem;
+  background: #1a1a1a;
+  border-radius: 0.35rem;
+  align-items: center;
+}
+.gc-inline-form input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  color: #e8e0d4;
+  font-size: 0.72rem;
+  outline: none;
+}
+.gc-inline-form input:focus {
+  border-color: #14b8a6;
+}
+.gc-inline-form select {
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  padding: 0.3rem 0.35rem;
+  color: #e8e0d4;
+  font-size: 0.7rem;
+  outline: none;
+}
+.gc-inline-form button {
+  padding: 0.3rem 0.5rem;
+  border: none;
+  border-radius: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.gc-inline-submit {
+  background: #14b8a6;
+  color: #111;
+}
+.gc-inline-cancel {
+  background: transparent;
+  color: #999;
+  border: 1px solid #333 !important;
+}
+
+/* ── Add Task Button on project header ── */
+.gc-add-task-btn {
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0;
+  transition: all 120ms;
+  flex-shrink: 0;
+}
+.gc-add-task-btn:hover {
+  border-color: #14b8a6;
+  color: #14b8a6;
+}
+
+/* ── Today button on task rows ── */
+.gc-today-btn {
+  padding: 0.15rem 0.4rem;
+  border: 1px solid #333;
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #8b5cf6;
+  font-size: 0.62rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 120ms;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.gc-today-btn:hover {
+  border-color: #8b5cf6;
+  background: #8b5cf618;
+}
+
+/* ── Notes indicator on queue cards ── */
+.gc-notes-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 0.62rem;
+  color: #14b8a6;
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+  transition: background 120ms;
+}
+.gc-notes-indicator:hover {
+  background: #14b8a618;
+}
+
+/* ── Notes popover on queue cards ── */
+.gc-notes-popover {
+  margin-top: 0.35rem;
+  padding: 0.4rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 0.35rem;
+}
+.gc-notes-popover textarea {
+  width: 100%;
+  background: transparent;
+  border: 1px solid #333;
+  border-radius: 0.3rem;
+  padding: 0.3rem 0.4rem;
+  color: #e8e0d4;
+  font-size: 0.72rem;
+  font-family: inherit;
+  resize: vertical;
+  outline: none;
+  min-height: 48px;
+}
+.gc-notes-popover textarea:focus {
+  border-color: #14b8a6;
+}
+.gc-notes-popover-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 4px;
+  margin-top: 4px;
+}
+.gc-notes-popover-actions button {
+  padding: 0.2rem 0.45rem;
+  border: none;
+  border-radius: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ── Detail sheet enhancements ── */
+.gc-sheet-task-actions {
+  display: flex;
+  gap: 4px;
+  margin-top: 0.25rem;
+}
+.gc-sheet-task-detail {
+  font-size: 0.7rem;
+  color: #888;
+  margin-top: 0.2rem;
+  line-height: 1.4;
+}
+.gc-sheet-task-clickable {
+  cursor: pointer;
+  transition: background 120ms;
+  border-radius: 0.35rem;
+  padding: 0.4rem;
+}
+.gc-sheet-task-clickable:hover {
+  background: #2a2a2a;
+}
+.gc-sheet-task-expanded {
+  background: #1a1a1a;
+  border-radius: 0.35rem;
+  padding: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+/* ── Quick-add floating bar ── */
+.gc-quick-add-bar {
+  position: fixed;
+  bottom: 1.5rem;
+  inset-inline-end: 1.5rem;
+  z-index: 150;
+}
+.gc-quick-add-trigger {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: #14b8a6;
+  color: #111;
+  font-size: 1.4rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(20,184,166,0.35);
+  transition: transform 120ms, box-shadow 120ms;
+}
+.gc-quick-add-trigger:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(20,184,166,0.5);
+}
+.gc-quick-add-panel {
+  position: absolute;
+  bottom: 56px;
+  inset-inline-end: 0;
+  width: 300px;
+  background: #222;
+  border: 1px solid #333;
+  border-radius: 0.6rem;
+  padding: 0.85rem;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  animation: gc-dialog-in 150ms ease-out;
+}
+.gc-quick-add-panel .gc-dialog-title {
+  margin-bottom: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .gc-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .gc-grid > * {
+    grid-column: span 1 !important;
+  }
+}

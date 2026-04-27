@@ -36,6 +36,10 @@ export class ProjectService {
     return this.repository.listByFactory(factoryId, workDate);
   }
 
+  async listDetailed(factoryId: string, workDate = todayBoardDate()) {
+    return this.repository.listDetailedByFactory(factoryId, workDate);
+  }
+
   async getById(factoryId: string, projectId: string, workDate = todayBoardDate()) {
     const project = await this.repository.getById(factoryId, projectId, workDate);
 

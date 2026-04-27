@@ -1,66 +1,43 @@
 import { requirePermission } from "@/modules/auth/guards";
 import { hasPermission } from "@/modules/auth/roles";
-import type {
-  ProjectDetail,
-  ProjectListItem,
-} from "@/modules/projects/project.schemas";
 import { ProjectService } from "@/modules/projects/project.service";
+import { UserService } from "@/modules/users/user.service";
 
 import { OpsWorkspace } from "./ops-workspace";
 
 const projectService = new ProjectService();
-
-function boardDate(offset = 0) {
-  const value = new Date();
-  value.setDate(value.getDate() + offset);
-  return value.toISOString().slice(0, 10);
-}
-
-type OpsProjectWorkspace = ProjectDetail & Pick<
-  ProjectListItem,
-  "openTaskCount" | "queuedTodayCount" | "waitingApprovalCount"
->;
+const userService = new UserService();
 
 export default async function OpsPage() {
   const session = await requirePermission("ops:view");
   const canManage = hasPermission(session.role, "ops:manage");
-  const today = boardDate(0);
-  const tomorrow = boardDate(1);
 
-  const [todayBoard, tomorrowBoard, projectList] = await Promise.all([
-    projectService.getOpsBoard(session.factoryId, { date: today }),
-    projectService.getOpsBoard(session.factoryId, { date: tomorrow }),
-    projectService.list(session.factoryId, today),
+  const [board, projects, workers] = await Promise.all([
+    projectService.getOpsBoard(session.factoryId),
+    projectService.listDetailed(session.factoryId),
+    userService.listAssignable(session.factoryId),
   ]);
 
-  const visibleProjects = projectList
-    .filter((project) => !["COMPLETED", "CANCELLED"].includes(project.status))
-    .slice(0, 5);
+  const opsProjects = projects.map((p) => ({
+    ...p,
+    openTaskCount: p.tasks.filter((t) => !["DONE", "CANCELLED"].includes(t.status)).length,
+    queuedTodayCount: p.tasks.filter((t) => t.todayQueueItem).length,
+    waitingApprovalCount: p.tasks.filter((t) => t.approvalStatus === "PENDING").length,
+  }));
 
-  const projectDetails = await Promise.all(
-    visibleProjects.map((project) =>
-      projectService.getById(session.factoryId, project.id, today)
-    )
-  );
-
-  const projects: OpsProjectWorkspace[] = projectDetails.map((detail) => {
-    const summary = visibleProjects.find((project) => project.id === detail.id);
-
-    return {
-      ...detail,
-      openTaskCount: summary?.openTaskCount ?? 0,
-      queuedTodayCount: summary?.queuedTodayCount ?? 0,
-      waitingApprovalCount: summary?.waitingApprovalCount ?? 0,
-    };
-  });
+  const activities = projects
+    .flatMap((p) => p.activities)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20);
 
   return (
     <OpsWorkspace
-      canManage={canManage}
       factoryName={session.factoryName}
-      projects={projects}
-      todayBoard={todayBoard}
-      tomorrowBoard={tomorrowBoard}
+      canManage={canManage}
+      initialBoard={board}
+      initialProjects={opsProjects}
+      workers={workers.map((w) => ({ id: w.id, displayName: w.displayName, role: w.role }))}
+      initialActivities={activities}
     />
   );
 }
