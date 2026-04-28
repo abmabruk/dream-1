@@ -11,10 +11,10 @@ export const ASSIGNMENT_STATUS_LABELS: Record<
   AssignmentWorkflowStatus,
   string
 > = {
-  PLANNED: "Planned",
-  IN_PROGRESS: "In progress",
-  BLOCKED: "Blocked",
-  DONE: "Done",
+  PLANNED: "مخطط",
+  IN_PROGRESS: "قيد التنفيذ",
+  BLOCKED: "متوقف",
+  DONE: "منجز",
 };
 
 export const ASSIGNMENT_STATUS_TRANSITIONS: Record<

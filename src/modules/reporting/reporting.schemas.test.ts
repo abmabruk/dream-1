@@ -41,7 +41,7 @@ describe("reporting query parsing", () => {
         from: "2025-01-01",
         to: "2026-03-27",
       })
-    ).toThrow(/366 days/);
+    ).toThrow(/366 يوماً/);
   });
 
   it("creates stable search params for filtered reports", () => {

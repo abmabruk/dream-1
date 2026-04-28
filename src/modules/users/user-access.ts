@@ -17,23 +17,23 @@ export type AppUserStatus = (typeof USER_STATUS_VALUES)[number];
 export type ManageableUserStatus = (typeof MANAGEABLE_USER_STATUSES)[number];
 
 export const INTERNAL_USER_ROLE_LABELS: Record<InternalUserRole, string> = {
-  OWNER: "Owner",
-  FACTORY_MANAGER: "Factory manager",
-  SALES_MANAGER: "Sales manager",
-  SUPERVISOR: "Supervisor",
-  WORKER: "Worker",
-  ACCOUNTANT: "Accountant",
+  OWNER: "مالك",
+  FACTORY_MANAGER: "مدير المصنع",
+  SALES_MANAGER: "مدير المبيعات",
+  SUPERVISOR: "مشرف",
+  WORKER: "عامل",
+  ACCOUNTANT: "محاسب",
 };
 
 export const USER_STATUS_LABELS: Record<AppUserStatus, string> = {
-  ACTIVE: "Active",
-  INVITED: "Invited",
-  DISABLED: "Disabled",
+  ACTIVE: "نشط",
+  INVITED: "مدعو",
+  DISABLED: "معطل",
 };
 
 export const MANAGEABLE_USER_STATUS_LABELS: Record<ManageableUserStatus, string> = {
-  ACTIVE: "Active",
-  DISABLED: "Disabled",
+  ACTIVE: "نشط",
+  DISABLED: "معطل",
 };
 
 const MANAGEABLE_ROLES_BY_ACTOR: Record<UserRole, readonly InternalUserRole[]> = {
@@ -80,11 +80,11 @@ export function getManagementBlockReason(
   }
 ) {
   if (actorUserId === target.id) {
-    return "This is your current account. Self role and status changes are blocked here.";
+    return "هذا حسابك الحالي. تغيير الدور والحالة الذاتية غير مسموح به هنا.";
   }
 
   if (!canManageRole(actorRole, target.role)) {
-    return "Your role cannot manage this account.";
+    return "دورك لا يملك صلاحية إدارة هذا الحساب.";
   }
 
   return null;

@@ -5,15 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/modules/auth/guards";
 import { SettingsService } from "@/modules/settings/settings.service";
 
-export type UpdateSettingsActionState = {
-  error: string | null;
-  message: string | null;
-};
-
-export const initialSettingsActionState: UpdateSettingsActionState = {
-  error: null,
-  message: null,
-};
+import type { UpdateSettingsActionState } from "./state";
 
 const settingsService = new SettingsService();
 
@@ -43,11 +35,11 @@ export async function updateFactorySettingsAction(
 
     return {
       error: null,
-      message: "Settings saved.",
+      message: "تم حفظ الإعدادات بنجاح",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not save settings.",
+      error: error instanceof Error ? error.message : "تعذّر حفظ الإعدادات.",
       message: null,
     };
   }

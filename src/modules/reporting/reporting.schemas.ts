@@ -63,7 +63,7 @@ const reportingQuerySchema = z
     if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Invalid report date range",
+        message: "نطاق تاريخ التقرير غير صالح",
       });
       return z.NEVER;
     }
@@ -74,7 +74,7 @@ const reportingQuerySchema = z
     if (days < 1) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "`from` must be on or before `to`",
+        message: "يجب أن يكون تاريخ البداية قبل أو يساوي تاريخ النهاية",
       });
       return z.NEVER;
     }
@@ -82,7 +82,7 @@ const reportingQuerySchema = z
     if (days > 366) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Report range cannot exceed 366 days",
+        message: "لا يمكن أن يتجاوز نطاق التقرير 366 يوماً",
       });
       return z.NEVER;
     }

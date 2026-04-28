@@ -1,6 +1,10 @@
 import Link from "next/link";
 
 import { signOutAction } from "@/app/sign-in/actions";
+import { CollapsibleSidebar } from "./_components/collapsible-sidebar";
+import { ToastProvider } from "@/components/ui";
+import { CommandPalette } from "@/components/ui/CommandPalette";
+import { QuickAdd } from "@/components/ui/QuickAdd";
 import { hasPermission } from "@/modules/auth/roles";
 import { requireSession } from "@/modules/auth/session";
 import { getNotificationFeedCached } from "@/modules/notifications/notification.service";
@@ -16,35 +20,66 @@ export default async function AppLayout({
     : null;
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-1 gap-6 px-4 py-4 lg:px-8">
-      <aside className="panel hidden w-72 shrink-0 lg:block">
+    <ToastProvider>
+    <div className="flex flex-1">
+      <CollapsibleSidebar
+        unreadNotifications={notifications?.summary.unread ?? 0}
+        canViewNotifications={hasPermission(session.role, "notifications:view")}
+      >
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Dream 1
+          دريم ١
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Operations workspace</h2>
+        <h2 className="mt-2 text-2xl font-semibold">مساحة العمليات</h2>
         <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
           <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Signed in
+            مسجل الدخول
           </p>
           <p className="mt-2 font-semibold">{session.displayName}</p>
           <p className="text-sm text-[var(--muted-foreground)]">{session.email}</p>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">{session.role}</p>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">{session.factoryName}</p>
         </div>
-        <nav className="mt-8 flex flex-col gap-2 text-sm">
+        <nav className="mt-8 flex flex-col gap-1 text-sm">
+          {/* Top group: operations / dashboard / notifications / reports */}
           {hasPermission(session.role, "ops:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/ops">
-              Today ops
+              عمليات اليوم
+            </Link>
+          )}
+          {hasPermission(session.role, "ops:view") && (
+            <Link
+              className="flex items-center gap-2 rounded-2xl px-4 py-3 hover:bg-black/4"
+              href="/floor"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="افتح شاشة المصنع في علامة تبويب جديدة"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <rect x="2" y="4" width="20" height="13" rx="2" ry="2" />
+                <line x1="8" y1="21" x2="16" y2="21" />
+                <line x1="12" y1="17" x2="12" y2="21" />
+              </svg>
+              <span>شاشة المصنع</span>
             </Link>
           )}
           {hasPermission(session.role, "projects:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/projects">
-              Projects
+              المشاريع
             </Link>
           )}
           {hasPermission(session.role, "dashboard:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app">
-              Dashboard
+              لوحة التحكم
             </Link>
           )}
           {hasPermission(session.role, "notifications:view") && (
@@ -52,9 +87,9 @@ export default async function AppLayout({
               className="flex items-center justify-between rounded-2xl px-4 py-3 hover:bg-black/4"
               href="/app/notifications"
             >
-              <span>Notifications</span>
+              <span>الإشعارات</span>
               {notifications && notifications.summary.unread > 0 && (
-                <span className="rounded-full bg-black px-2.5 py-0.5 text-xs font-semibold text-white">
+                <span className="rounded-full bg-[var(--accent)] px-2.5 py-0.5 text-xs font-semibold text-[var(--accent-foreground)]">
                   {notifications.summary.unread}
                 </span>
               )}
@@ -62,50 +97,79 @@ export default async function AppLayout({
           )}
           {hasPermission(session.role, "reports:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/reports">
-              Reporting
+              التقارير
             </Link>
           )}
+
+          {/* Middle group: relations / orders / customers / finance */}
+          <hr className="my-3 border-0 border-t border-[var(--border)]" />
           {hasPermission(session.role, "crm:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/crm">
-              CRM module
+              إدارة العلاقات
             </Link>
           )}
           {hasPermission(session.role, "orders:view") && (
             <>
               <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/orders">
-                Orders module
+                الطلبات
               </Link>
               <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/customers">
-                Customers module
+                العملاء
               </Link>
             </>
           )}
+          {hasPermission(session.role, "costs:view") && (
+            <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/finance">
+              الماليات
+            </Link>
+          )}
+
+          {/* Admin group: users / settings */}
+          <hr className="my-3 border-0 border-t border-[var(--border)]" />
           {hasPermission(session.role, "users:manage") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/users">
-              Users module
+              المستخدمون
             </Link>
           )}
           {hasPermission(session.role, "settings:manage") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/settings">
-              Settings
+              الإعدادات
             </Link>
           )}
+          {hasPermission(session.role, "projects:manage") && (
+            <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/settings/stages">
+              إعدادات المراحل
+            </Link>
+          )}
+
+          {/* Other portals */}
+          <hr className="my-3 border-0 border-t border-[var(--border)]" />
+          <p className="px-4 pb-1 pt-1 text-[0.7rem] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+            بوابات أخرى
+          </p>
           {hasPermission(session.role, "production:view") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/worker">
-              Worker entry
+              بوابة العامل
             </Link>
           )}
           <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/portal">
-            Customer portal
+            بوابة العميل
           </Link>
         </nav>
         <form action={signOutAction} className="mt-8">
           <button className="button-secondary w-full" type="submit">
-            Sign out
+            تسجيل الخروج
           </button>
         </form>
-      </aside>
-      <div className="flex min-w-0 flex-1 flex-col gap-6">{children}</div>
+      </CollapsibleSidebar>
+      <div className="relative flex min-w-0 flex-1 flex-col">
+        <div className="dream-app-shell mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-6 py-6">
+          {children}
+        </div>
+      </div>
     </div>
+    <CommandPalette />
+    <QuickAdd />
+    </ToastProvider>
   );
 }

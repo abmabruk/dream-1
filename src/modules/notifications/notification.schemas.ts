@@ -6,16 +6,24 @@ export const NOTIFICATION_TYPE_VALUES = [
   "CRM_FOLLOW_UP_DUE",
   "ASSIGNMENT_BLOCKED",
   "CUSTOMER_APPROVAL_PENDING",
+  "TASK_MENTIONED",
+  "TASK_COMMENT",
+  "STAGE_STARTED",
+  "DEPOSIT_ATTESTED",
 ] as const;
 
 export type NotificationStatus = (typeof NOTIFICATION_STATUS_VALUES)[number];
 export type NotificationType = (typeof NOTIFICATION_TYPE_VALUES)[number];
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
-  ORDER_OVERDUE: "Order overdue",
-  CRM_FOLLOW_UP_DUE: "Follow-up due",
-  ASSIGNMENT_BLOCKED: "Assignment blocked",
-  CUSTOMER_APPROVAL_PENDING: "Approval pending",
+  ORDER_OVERDUE: "الطلب متأخر",
+  CRM_FOLLOW_UP_DUE: "موعد المتابعة",
+  ASSIGNMENT_BLOCKED: "المهمة متوقفة",
+  CUSTOMER_APPROVAL_PENDING: "بانتظار موافقة العميل",
+  TASK_MENTIONED: "تم ذكرك",
+  TASK_COMMENT: "تعليق جديد",
+  STAGE_STARTED: "بدأت مرحلة جديدة",
+  DEPOSIT_ATTESTED: "تم تأكيد العربون",
 };
 
 export const notificationListItemSchema = z.object({

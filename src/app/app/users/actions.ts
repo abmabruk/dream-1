@@ -5,15 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/modules/auth/guards";
 import { UserService } from "@/modules/users/user.service";
 
-export type UserAdminActionState = {
-  error: string | null;
-  message: string | null;
-};
-
-export const initialUserAdminActionState: UserAdminActionState = {
-  error: null,
-  message: null,
-};
+import type { UserAdminActionState } from "./state";
 
 const userService = new UserService();
 
@@ -50,11 +42,11 @@ export async function createUserAction(
 
     return {
       error: null,
-      message: "User created.",
+      message: "تم إنشاء المستخدم بنجاح",
     };
   } catch (error) {
     return {
-      error: toMessage(error, "Could not create user."),
+      error: toMessage(error, "تعذّر إنشاء المستخدم."),
       message: null,
     };
   }
@@ -86,11 +78,11 @@ export async function updateUserAction(
 
     return {
       error: null,
-      message: "User updated.",
+      message: "تم تحديث المستخدم بنجاح",
     };
   } catch (error) {
     return {
-      error: toMessage(error, "Could not update user."),
+      error: toMessage(error, "تعذّر تحديث المستخدم."),
       message: null,
     };
   }
@@ -119,11 +111,11 @@ export async function resetUserPasswordAction(
 
     return {
       error: null,
-      message: "Password reset.",
+      message: "تم إعادة تعيين كلمة المرور بنجاح",
     };
   } catch (error) {
     return {
-      error: toMessage(error, "Could not reset password."),
+      error: toMessage(error, "تعذّر إعادة تعيين كلمة المرور."),
       message: null,
     };
   }

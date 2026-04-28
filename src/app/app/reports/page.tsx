@@ -16,23 +16,16 @@ import {
   createReportSearchParams,
 } from "@/modules/reporting/reporting.schemas";
 import { ReportingService } from "@/modules/reporting/reporting.service";
+import { formatDateAr, formatSAR } from "@/lib/format";
 
 const reportingService = new ReportingService();
 
 function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return formatSAR(amount, { currency, decimals: 0 });
 }
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
+  return formatDateAr(value);
 }
 
 function formatDateInputValue(date: Date) {
@@ -40,14 +33,14 @@ function formatDateInputValue(date: Date) {
 }
 
 function formatDayLabel(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ar-SA", {
     month: "short",
     day: "numeric",
   }).format(new Date(`${value}T00:00:00.000Z`));
 }
 
 function formatMonthLabel(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ar-SA", {
     year: "numeric",
     month: "short",
   }).format(new Date(`${value}-01T00:00:00.000Z`));
@@ -136,52 +129,52 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
   );
   const summaryCards: SummaryCard[] = [
     {
-      label: "Orders created",
+      label: "الطلبات المنشأة",
       value: overview.summary.ordersCreated.toString(),
       show: canViewOrders,
     },
     {
-      label: "Orders approved",
+      label: "الطلبات المعتمدة",
       value: overview.summary.ordersApproved.toString(),
       show: canViewOrders,
     },
     {
-      label: "Orders delivered",
+      label: "الطلبات المسلّمة",
       value: overview.summary.ordersDelivered.toString(),
       show: canViewOrders,
     },
     {
-      label: "New customers",
+      label: "العملاء الجدد",
       value: overview.summary.newCustomers.toString(),
       show: canViewOrders,
     },
     {
-      label: "New inquiries",
+      label: "الاستفسارات الجديدة",
       value: overview.summary.newInquiries.toString(),
       show: canViewCrm,
     },
     {
-      label: "Quoted revenue",
+      label: "الإيرادات المسعّرة",
       value: formatCurrency(overview.summary.quotedRevenue, session.factoryCurrency),
       show: canViewOrders,
     },
     {
-      label: "Delivered revenue",
+      label: "إيرادات التسليم",
       value: formatCurrency(overview.summary.deliveredRevenue, session.factoryCurrency),
       show: canViewOrders,
     },
     {
-      label: "Assignments completed",
+      label: "المهام المكتملة",
       value: overview.summary.completedAssignments.toString(),
       show: canViewProduction,
     },
     {
-      label: "Overdue orders",
+      label: "الطلبات المتأخرة",
       value: overview.summary.overdueOrders.toString(),
       show: canViewOrders,
     },
     {
-      label: "Due follow-ups",
+      label: "المتابعات المستحقة",
       value: overview.summary.dueFollowUps.toString(),
       show: canViewCrm,
     },
@@ -199,15 +192,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Reporting
+              التقارير
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-              Live reporting and exports
+              التقارير المباشرة والتصدير
             </h1>
             <p className="mt-4 text-base leading-8 text-[var(--muted-foreground)]">
-              This page now supports filtered reporting, exportable CSV output,
-              and monthly trend summaries from the real database for the signed-in
-              factory.
+              تدعم هذه الصفحة الآن التقارير المصفّاة ومخرجات CSV القابلة للتصدير
+              وملخصات الاتجاهات الشهرية من قاعدة البيانات الحقيقية للمصنع المسجل دخوله.
             </p>
           </div>
 
@@ -217,10 +209,10 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               href={buildExportHref(activeQuery)}
               prefetch={false}
             >
-              Export CSV
+              تصدير CSV
             </Link>
             <Link className="button-secondary" href="/app/reports">
-              Reset filters
+              إعادة تعيين التصفية
             </Link>
           </div>
         </div>
@@ -228,7 +220,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         <form className="mt-6 space-y-4" method="get">
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
             <label className="text-sm">
-              <span className="mb-2 block text-[var(--muted-foreground)]">From</span>
+              <span className="mb-2 block text-[var(--muted-foreground)]">من</span>
               <input
                 className="input"
                 defaultValue={overview.range.from}
@@ -237,7 +229,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               />
             </label>
             <label className="text-sm">
-              <span className="mb-2 block text-[var(--muted-foreground)]">To</span>
+              <span className="mb-2 block text-[var(--muted-foreground)]">إلى</span>
               <input
                 className="input"
                 defaultValue={overview.range.to}
@@ -246,7 +238,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               />
             </label>
             <button className="button-primary self-end" type="submit">
-              Apply report
+              تطبيق التقرير
             </button>
           </div>
 
@@ -255,12 +247,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
             open={hasAdvancedFilters}
           >
             <summary className="cursor-pointer list-none text-sm font-semibold">
-              Advanced filters
+              تصفية متقدمة
             </summary>
             <div className="mt-4 grid gap-6 xl:grid-cols-2">
               <fieldset className="space-y-3">
                 <legend className="text-sm font-medium text-[var(--muted-foreground)]">
-                  Order statuses
+                  حالات الطلبات
                 </legend>
                 <div className="grid gap-2 md:grid-cols-2">
                   {ORDER_STATUS_VALUES.map((status) => (
@@ -282,7 +274,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
               <fieldset className="space-y-3">
                 <legend className="text-sm font-medium text-[var(--muted-foreground)]">
-                  Inquiry stages
+                  مراحل الاستفسارات
                 </legend>
                 <div className="grid gap-2 md:grid-cols-2">
                   {INQUIRY_STAGE_VALUES.map((stage) => (
@@ -314,7 +306,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               to: formatDateInputValue(today),
             })}
           >
-            Last 7 days
+            آخر 7 أيام
           </Link>
           <Link
             className="rounded-full border border-[var(--border)] px-4 py-2 text-[var(--muted-foreground)] hover:bg-black/4"
@@ -324,7 +316,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               to: formatDateInputValue(today),
             })}
           >
-            Last 30 days
+            آخر 30 يوماً
           </Link>
           <Link
             className="rounded-full border border-[var(--border)] px-4 py-2 text-[var(--muted-foreground)] hover:bg-black/4"
@@ -334,14 +326,14 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
               to: formatDateInputValue(today),
             })}
           >
-            Last 90 days
+            آخر 90 يوماً
           </Link>
           <span className="rounded-full bg-[var(--panel-strong)] px-4 py-2 text-[var(--muted-foreground)]">
-            {overview.range.days} day range
+            نطاق {overview.range.days} يوم
           </span>
           {hasAdvancedFilters && (
             <span className="rounded-full bg-[var(--panel-strong)] px-4 py-2 text-[var(--muted-foreground)]">
-              Advanced filters active
+              التصفية المتقدمة نشطة
             </span>
           )}
         </div>
@@ -362,7 +354,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewOrders && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Current order pipeline
+              خط أنابيب الطلبات الحالي
             </p>
             <div className="mt-5 space-y-4">
               {overview.currentPipeline.orderStatuses.map((entry) => (
@@ -386,7 +378,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewCrm && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Current CRM pipeline
+              خط أنابيب إدارة العلاقات الحالي
             </p>
             <div className="mt-5 space-y-4">
               {overview.currentPipeline.inquiryStages.map((entry) => (
@@ -410,18 +402,18 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Activity series
+          سلسلة النشاط
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Day-by-day movement</h2>
+        <h2 className="mt-2 text-2xl font-semibold">الحركة يوماً بيوم</h2>
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-[var(--muted-foreground)]">
               <tr>
-                <th className="px-4 py-3 font-medium">Day</th>
-                <th className="px-4 py-3 font-medium">Orders created</th>
-                <th className="px-4 py-3 font-medium">Orders delivered</th>
-                <th className="px-4 py-3 font-medium">Customers added</th>
-                <th className="px-4 py-3 font-medium">Inquiries created</th>
+                <th className="px-4 py-3 font-medium">اليوم</th>
+                <th className="px-4 py-3 font-medium">الطلبات المنشأة</th>
+                <th className="px-4 py-3 font-medium">الطلبات المسلّمة</th>
+                <th className="px-4 py-3 font-medium">العملاء المضافون</th>
+                <th className="px-4 py-3 font-medium">الاستفسارات المنشأة</th>
               </tr>
             </thead>
             <tbody>
@@ -441,20 +433,20 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
 
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Monthly trends
+          الاتجاهات الشهرية
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Month-by-month summary</h2>
+        <h2 className="mt-2 text-2xl font-semibold">ملخص شهر بشهر</h2>
         <div className="mt-5 overflow-x-auto">
           <table className="min-w-full text-left text-sm">
             <thead className="text-[var(--muted-foreground)]">
               <tr>
-                <th className="px-4 py-3 font-medium">Month</th>
-                <th className="px-4 py-3 font-medium">Orders created</th>
-                <th className="px-4 py-3 font-medium">Orders delivered</th>
-                <th className="px-4 py-3 font-medium">Customers added</th>
-                <th className="px-4 py-3 font-medium">Inquiries created</th>
-                <th className="px-4 py-3 font-medium">Quoted revenue</th>
-                <th className="px-4 py-3 font-medium">Delivered revenue</th>
+                <th className="px-4 py-3 font-medium">الشهر</th>
+                <th className="px-4 py-3 font-medium">الطلبات المنشأة</th>
+                <th className="px-4 py-3 font-medium">الطلبات المسلّمة</th>
+                <th className="px-4 py-3 font-medium">العملاء المضافون</th>
+                <th className="px-4 py-3 font-medium">الاستفسارات المنشأة</th>
+                <th className="px-4 py-3 font-medium">الإيرادات المسعّرة</th>
+                <th className="px-4 py-3 font-medium">إيرادات التسليم</th>
               </tr>
             </thead>
             <tbody>
@@ -478,12 +470,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewOrders && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Top customers
+              أفضل العملاء
             </p>
             <div className="mt-5 space-y-3">
               {overview.topCustomers.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No customer revenue activity in this range.
+                  لا يوجد نشاط إيرادات للعملاء في هذا النطاق.
                 </p>
               ) : (
                 overview.topCustomers.map((customer) => (
@@ -495,13 +487,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                       <div>
                         <p className="font-semibold">{customer.customerName}</p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          {customer.orderCount} created orders in range
+                          {customer.orderCount} طلبات منشأة في النطاق
                         </p>
                       </div>
                       <div className="text-right text-sm">
                         <p>{formatCurrency(customer.quotedRevenue, session.factoryCurrency)}</p>
                         <p className="mt-1 text-[var(--muted-foreground)]">
-                          Delivered: {formatCurrency(customer.deliveredRevenue, session.factoryCurrency)}
+                          المسلّم: {formatCurrency(customer.deliveredRevenue, session.factoryCurrency)}
                         </p>
                       </div>
                     </div>
@@ -515,12 +507,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewProduction && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Worker output
+              إنتاج العمال
             </p>
             <div className="mt-5 space-y-3">
               {overview.workerOutput.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No worker assignment activity yet.
+                  لا يوجد نشاط مهام للعمال بعد.
                 </p>
               ) : (
                 overview.workerOutput.map((worker) => (
@@ -531,12 +523,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                     <div className="flex items-start justify-between gap-4">
                       <p className="font-semibold">{worker.workerName}</p>
                       <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        {worker.completedAssignments} completed
+                        {worker.completedAssignments} مكتملة
                       </span>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-                      <p>In progress: {worker.inProgressAssignments}</p>
-                      <p>Planned: {worker.plannedAssignments}</p>
+                      <p>قيد التنفيذ: {worker.inProgressAssignments}</p>
+                      <p>مخططة: {worker.plannedAssignments}</p>
                     </div>
                   </div>
                 ))
@@ -550,12 +542,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewOrders && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Overdue orders
+              الطلبات المتأخرة
             </p>
             <div className="mt-5 space-y-3">
               {overview.overdueOrderList.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No overdue orders right now.
+                  لا توجد طلبات متأخرة الآن.
                 </p>
               ) : (
                 overview.overdueOrderList.map((order) => (
@@ -571,13 +563,13 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                         </p>
                       </div>
                       <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
-                        {order.daysLate} days late
+                        متأخر {order.daysLate} أيام
                       </span>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-                      <p>Customer: {order.customerName}</p>
-                      <p>Status: {ORDER_STATUS_LABELS[order.status]}</p>
-                      <p>Target: {formatDate(order.targetDate)}</p>
+                      <p>العميل: {order.customerName}</p>
+                      <p>الحالة: {ORDER_STATUS_LABELS[order.status]}</p>
+                      <p>الهدف: {formatDate(order.targetDate)}</p>
                     </div>
                   </div>
                 ))
@@ -589,12 +581,12 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         {canViewCrm && (
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Follow-up queue
+              قائمة انتظار المتابعة
             </p>
             <div className="mt-5 space-y-3">
               {overview.followUpList.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No follow-ups due in this range.
+                  لا توجد متابعات مستحقة في هذا النطاق.
                 </p>
               ) : (
                 overview.followUpList.map((inquiry) => (
@@ -614,8 +606,8 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
                       </span>
                     </div>
                     <div className="mt-3 grid gap-2 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-                      <p>Follow-up: {formatDate(inquiry.nextFollowUpAt)}</p>
-                      <p>Assignee: {inquiry.assignedToName || "Unassigned"}</p>
+                      <p>المتابعة: {formatDate(inquiry.nextFollowUpAt)}</p>
+                      <p>المسند إليه: {inquiry.assignedToName || "غير مسند"}</p>
                     </div>
                   </div>
                 ))

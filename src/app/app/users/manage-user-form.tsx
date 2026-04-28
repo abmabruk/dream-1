@@ -13,11 +13,8 @@ import {
   MANAGEABLE_USER_STATUS_LABELS,
 } from "@/modules/users/user-access";
 
-import {
-  initialUserAdminActionState,
-  updateUserAction,
-} from "./actions";
-
+import { updateUserAction } from "./actions";
+import { initialUserAdminActionState } from "./state";
 export function ManageUserForm({
   availableRoles,
   user,
@@ -35,16 +32,16 @@ export function ManageUserForm({
       <input name="userId" type="hidden" value={user.id} />
 
       <div>
-        <p className="text-sm font-semibold">Role and status</p>
+        <p className="text-sm font-semibold">الدور والحالة</p>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Update access for this team member.
+          تحديث صلاحيات عضو الفريق.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor={`role-${user.id}`}>
-            Role
+            الدور
           </label>
           <select
             className="input-field"
@@ -61,7 +58,7 @@ export function ManageUserForm({
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor={`status-${user.id}`}>
-            Status
+            الحالة
           </label>
           <select
             className="input-field"
@@ -91,7 +88,7 @@ export function ManageUserForm({
       )}
 
       <button className="button-secondary disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Saving..." : "Save access"}
+        {pending ? "جاري الحفظ..." : "حفظ الصلاحيات"}
       </button>
     </form>
   );

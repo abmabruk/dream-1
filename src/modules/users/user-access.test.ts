@@ -34,7 +34,7 @@ describe("user access guardrails", () => {
         id: "owner_1",
         role: "OWNER",
       })
-    ).toBe("Your role cannot manage this account.");
+    ).toBe("دورك لا يملك صلاحية إدارة هذا الحساب.");
 
     expect(
       getManagementBlockReason("OWNER", "owner_1", {
@@ -42,7 +42,7 @@ describe("user access guardrails", () => {
         role: "OWNER",
       })
     ).toBe(
-      "This is your current account. Self role and status changes are blocked here."
+      "هذا حسابك الحالي. تغيير الدور والحالة الذاتية غير مسموح به هنا."
     );
   });
 });

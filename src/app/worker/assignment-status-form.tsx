@@ -7,11 +7,8 @@ import {
   type AssignmentWorkflowStatus,
 } from "@/modules/production/assignment-status";
 
-import {
-  initialWorkerActionState,
-  updateAssignmentStatusAction,
-} from "./actions";
-
+import { updateAssignmentStatusAction } from "./actions";
+import { initialWorkerActionState } from "./state";
 type Props = {
   assignmentId: string;
   currentStatus: AssignmentWorkflowStatus;
@@ -31,7 +28,7 @@ export function AssignmentStatusForm({
   if (allowedStatuses.length === 0) {
     return (
       <p className="text-sm text-[var(--muted-foreground)]">
-        No more status changes available from{" "}
+        لا تتوفر تغييرات حالة إضافية من{" "}
         <span className="font-medium text-[var(--foreground)]">
           {ASSIGNMENT_STATUS_LABELS[currentStatus]}
         </span>
@@ -46,7 +43,7 @@ export function AssignmentStatusForm({
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor={`status-${assignmentId}`}>
-          Next status
+          الحالة التالية
         </label>
         <select
           className="input-field"
@@ -65,7 +62,7 @@ export function AssignmentStatusForm({
       <textarea
         className="input-field min-h-24"
         name="note"
-        placeholder="Add update note"
+        placeholder="أضف ملاحظة تحديث"
       />
 
       {state.error && (
@@ -80,7 +77,7 @@ export function AssignmentStatusForm({
       )}
 
       <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Updating..." : "Update assignment"}
+        {pending ? "جاري التحديث..." : "تحديث الإسناد"}
       </button>
     </form>
   );

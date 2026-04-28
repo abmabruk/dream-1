@@ -7,8 +7,11 @@ export function QuickNotesWidget({ factoryName }: { factoryName: string }) {
   const [notes, setNotes] = useState("");
 
   useEffect(() => {
+    // Hydrating local component state from localStorage — external system,
+    // intentional setState in an effect.
     try {
       const saved = localStorage.getItem(storageKey);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (saved) setNotes(saved);
     } catch { /* ignore */ }
   }, [storageKey]);

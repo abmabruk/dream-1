@@ -1,3 +1,5 @@
+import { WorkQueueStatus } from "@prisma/client";
+
 export const PROJECT_STATUS_VALUES = [
   "PLANNING",
   "READY",
@@ -37,44 +39,53 @@ export const TASK_APPROVAL_STATUS_VALUES = [
 ] as const;
 
 export const PROJECT_STATUS_LABELS = {
-  PLANNING: "Planning",
-  READY: "Ready",
-  IN_PROGRESS: "In progress",
-  ON_HOLD: "On hold",
-  BLOCKED: "Blocked",
-  COMPLETED: "Completed",
-  CANCELLED: "Cancelled",
+  PLANNING: "تخطيط",
+  READY: "جاهز",
+  IN_PROGRESS: "قيد التنفيذ",
+  ON_HOLD: "معلق",
+  BLOCKED: "متوقف",
+  COMPLETED: "مكتمل",
+  CANCELLED: "ملغي",
 } as const;
 
 export const PROJECT_PRIORITY_LABELS = {
-  LOW: "Low",
-  MEDIUM: "Medium",
-  HIGH: "High",
-  URGENT: "Urgent",
+  LOW: "منخفض",
+  MEDIUM: "متوسط",
+  HIGH: "عالي",
+  URGENT: "عاجل",
 } as const;
 
 export const PROJECT_TASK_STATUS_LABELS = {
-  BACKLOG: "Backlog",
-  PLANNED_TODAY: "Planned today",
-  IN_PROGRESS: "In progress",
-  WAITING_APPROVAL: "Waiting approval",
-  BLOCKED: "Blocked",
-  DONE: "Done",
-  CANCELLED: "Cancelled",
+  BACKLOG: "للتنفيذ",
+  PLANNED_TODAY: "مخطط اليوم",
+  IN_PROGRESS: "قيد التنفيذ",
+  WAITING_APPROVAL: "بانتظار الموافقة",
+  BLOCKED: "متوقف",
+  DONE: "منجز",
+  CANCELLED: "ملغي",
 } as const;
 
 export const WORK_QUEUE_STATUS_LABELS = {
-  PLANNED: "Planned",
-  IN_PROGRESS: "In progress",
-  WAITING_APPROVAL: "Waiting approval",
-  BLOCKED: "Blocked",
-  DONE: "Done",
-  CANCELLED: "Cancelled",
+  PLANNED: "مخطط",
+  IN_PROGRESS: "قيد التنفيذ",
+  WAITING_APPROVAL: "بانتظار الموافقة",
+  BLOCKED: "متوقف",
+  DONE: "منجز",
+  CANCELLED: "ملغي",
 } as const;
 
 export const TASK_APPROVAL_STATUS_LABELS = {
-  NOT_REQUIRED: "Not required",
-  PENDING: "Pending",
-  APPROVED: "Approved",
-  REJECTED: "Rejected",
+  NOT_REQUIRED: "غير مطلوب",
+  PENDING: "قيد الانتظار",
+  APPROVED: "موافق عليه",
+  REJECTED: "مرفوض",
 } as const;
+
+export const WORK_QUEUE_STATUS_TRANSITIONS: Record<WorkQueueStatus, WorkQueueStatus[]> = {
+  PLANNED: ["IN_PROGRESS", "CANCELLED"],
+  IN_PROGRESS: ["WAITING_APPROVAL", "BLOCKED", "DONE", "PLANNED"],
+  WAITING_APPROVAL: ["IN_PROGRESS", "DONE", "BLOCKED"],
+  BLOCKED: ["IN_PROGRESS", "CANCELLED"],
+  DONE: [],
+  CANCELLED: [],
+};

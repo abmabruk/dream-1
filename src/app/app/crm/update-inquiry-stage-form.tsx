@@ -8,8 +8,8 @@ import {
   type InquiryStage,
 } from "@/modules/crm/inquiry-stage";
 
-import { initialInquiryActionState, updateInquiryStageAction } from "./actions";
-
+import { updateInquiryStageAction } from "./actions";
+import { initialInquiryActionState } from "./state";
 type Props = {
   inquiryId: string;
   currentStage: InquiryStage;
@@ -32,7 +32,7 @@ export function UpdateInquiryStageForm({
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor={`stage-${inquiryId}`}>
-          Stage
+          المرحلة
         </label>
         <select
           className="input-field"
@@ -50,7 +50,7 @@ export function UpdateInquiryStageForm({
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor={`followup-${inquiryId}`}>
-          Next follow-up
+          المتابعة التالية
         </label>
         <input
           className="input-field"
@@ -64,7 +64,7 @@ export function UpdateInquiryStageForm({
       <textarea
         className="input-field min-h-24"
         name="notes"
-        placeholder="Stage update note"
+        placeholder="ملاحظة تحديث المرحلة"
       />
 
       {state.error && (
@@ -79,7 +79,7 @@ export function UpdateInquiryStageForm({
       )}
 
       <button className="button-secondary w-full disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Updating..." : "Update inquiry"}
+        {pending ? "جاري التحديث..." : "تحديث الاستفسار"}
       </button>
     </form>
   );

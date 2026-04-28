@@ -182,7 +182,7 @@ export class NotificationRepository {
               factoryId,
               userId,
               dedupeKey: draft.dedupeKey,
-              type: draft.type,
+              type: draft.type as never,
               title: draft.title,
               message: draft.message,
               href: draft.href ?? null,
@@ -198,7 +198,7 @@ export class NotificationRepository {
             id: existing.id,
           },
           data: {
-            type: draft.type,
+            type: draft.type as never,
             title: draft.title,
             message: draft.message,
             href: draft.href ?? null,

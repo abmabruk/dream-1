@@ -1,11 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import {
   PROJECT_PRIORITY_LABELS,
   PROJECT_STATUS_LABELS,
 } from "@/modules/projects/project-status";
-import { PRIORITY_COLORS, STATUS_COLORS, post, type OpsProjectWorkspace } from "../shared";
+import { PRIORITY_COLORS, post, type OpsProjectWorkspace } from "../shared";
+import { TaskCard, useToast } from "@/components/ui";
 
 const PRIORITIES = ["LOW", "MEDIUM", "HIGH", "URGENT"] as const;
 
@@ -80,6 +82,31 @@ export function ProjectsWidget({
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addingTaskForId, setAddingTaskForId] = useState<string | null>(null);
   const [addingToQueue, setAddingToQueue] = useState<string | null>(null);
+  const { toast } = useToast();
+
+  // Reorder projects within the widget — uses the same persistent sort order
+  // as /app/projects (POST /api/v1/projects/reorder).
+  async function handleMoveProject(projectId: string, direction: "up" | "down") {
+    const idx = projects.findIndex((p) => p.id === projectId);
+    if (idx < 0) return;
+    const target = direction === "up" ? idx - 1 : idx + 1;
+    if (target < 0 || target >= projects.length) return;
+    const next = [...projects];
+    [next[idx], next[target]] = [next[target], next[idx]];
+    try {
+      const res = await fetch("/api/v1/projects/reorder", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds: next.map((p) => p.id) }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      toast(direction === "up" ? "✓ تم النقل للأعلى" : "✓ تم النقل للأسفل", "success");
+      onRefresh?.();
+    } catch {
+      toast("تعذّر النقل", "error");
+    }
+  }
 
   async function handleAddToQueue(taskId: string) {
     setAddingToQueue(taskId);
@@ -102,7 +129,7 @@ export function ProjectsWidget({
 
   return (
     <div className="gc-projects-list">
-      {projects.map((proj) => {
+      {projects.map((proj, projIdx) => {
         const isExpanded = expandedId === proj.id;
         const tasksDone = proj.tasks.filter((t) => t.status === "DONE").length;
         const totalTasks = proj.tasks.length;
@@ -116,7 +143,14 @@ export function ProjectsWidget({
             >
               <div className="gc-project-info">
                 <div className="gc-project-top-row">
-                  <span className="gc-project-code">{proj.orderCode || proj.code}</span>
+                  <Link
+                    href={`/app/projects/${proj.id}`}
+                    className="gc-project-code hover:underline"
+                    onClick={(e) => e.stopPropagation()}
+                    title="فتح صفحة المشروع"
+                  >
+                    {proj.orderCode || proj.code}
+                  </Link>
                   <span
                     className="gc-priority-badge"
                     style={{ background: `${PRIORITY_COLORS[proj.priority]}22`, color: PRIORITY_COLORS[proj.priority] }}
@@ -124,6 +158,36 @@ export function ProjectsWidget({
                     {PROJECT_PRIORITY_LABELS[proj.priority]}
                   </span>
                   <span className="gc-project-status">{PROJECT_STATUS_LABELS[proj.status]}</span>
+                  {canManage && projects.length > 1 && (
+                    <span className="ms-auto inline-flex items-center gap-1">
+                      <button
+                        type="button"
+                        aria-label="نقل المشروع للأعلى"
+                        title="نقل للأعلى"
+                        disabled={projIdx === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleMoveProject(proj.id, "up");
+                        }}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--panel)] text-[0.7rem] disabled:opacity-30 hover:bg-[var(--surface-subtle)]"
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="نقل المشروع للأسفل"
+                        title="نقل للأسفل"
+                        disabled={projIdx === projects.length - 1}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          void handleMoveProject(proj.id, "down");
+                        }}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-[var(--border)] bg-[var(--panel)] text-[0.7rem] disabled:opacity-30 hover:bg-[var(--surface-subtle)]"
+                      >
+                        ↓
+                      </button>
+                    </span>
+                  )}
                   {canManage && (
                     <button
                       className="gc-add-task-btn"
@@ -139,7 +203,13 @@ export function ProjectsWidget({
                     </button>
                   )}
                 </div>
-                <p className="gc-project-name">{proj.name}</p>
+                <Link
+                  href={`/app/projects/${proj.id}`}
+                  className="gc-project-name hover:underline"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {proj.name}
+                </Link>
                 <div className="gc-progress-row">
                   <div className="gc-progress-bar">
                     <div
@@ -178,35 +248,38 @@ export function ProjectsWidget({
                 {proj.tasks.map((task) => {
                   const canQueue = ["BACKLOG", "PLANNED_TODAY"].includes(task.status) && !task.todayQueueItem;
                   return (
-                    <div
+                    <TaskCard
                       key={task.id}
-                      className="gc-project-task-row"
+                      id={task.id}
+                      title={task.title}
+                      status={task.status}
+                      priority={task.priority}
+                      projectCode={proj.orderCode || proj.code}
+                      assigneeName={task.assignedToName}
+                      dueDate={task.dueDate}
+                      lastActivityAt={task.updatedAt}
                       onClick={() => onSelectProject(proj)}
                     >
-                      <div
-                        className="gc-task-status-dot"
-                        style={{ background: STATUS_COLORS[task.status] }}
-                      />
-                      <span className="gc-task-title-sm">{task.title}</span>
-                      <span className="gc-task-assignee-sm">{task.assignedToName || "--"}</span>
-                      {canManage && canQueue && (
-                        <button
-                          className="gc-today-btn"
-                          type="button"
-                          title="إضافة إلى طابور اليوم"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            void handleAddToQueue(task.id);
-                          }}
-                          disabled={addingToQueue === task.id}
-                        >
-                          {addingToQueue === task.id ? "..." : "\u2192 اليوم"}
-                        </button>
-                      )}
-                      {task.todayQueueItem && (
-                        <span style={{ fontSize: "0.6rem", color: "#8b5cf6", fontWeight: 600 }}>في الطابور</span>
-                      )}
-                    </div>
+                      <div className="flex items-center gap-2 flex-wrap text-[0.65rem]">
+                        {canManage && canQueue && (
+                          <button
+                            type="button"
+                            className="gc-today-btn"
+                            title="إضافة إلى طابور اليوم"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              void handleAddToQueue(task.id);
+                            }}
+                            disabled={addingToQueue === task.id}
+                          >
+                            {addingToQueue === task.id ? "..." : "\u2192 اليوم"}
+                          </button>
+                        )}
+                        {task.todayQueueItem && (
+                          <span style={{ fontSize: "0.6rem", color: "#8b5cf6", fontWeight: 600 }}>في الطابور</span>
+                        )}
+                      </div>
+                    </TaskCard>
                   );
                 })}
                 {proj.tasks.length === 0 && <p className="gc-empty">لا توجد مهام</p>}

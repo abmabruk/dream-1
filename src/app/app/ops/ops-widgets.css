@@ -9,8 +9,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #1a1a1a;
-  color: #e8e0d4;
+  background: var(--background);
+  color: var(--foreground);
 }
 
 /* ── Top Bar ─────────────────────────────────────────────────────────────── */
@@ -21,8 +21,8 @@
   gap: 1.5rem;
   padding: 0 1.25rem;
   height: 56px;
-  background: #1e1e1e;
-  border-bottom: 1px solid #333;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
 }
 
 .gc-topbar-left {
@@ -34,7 +34,7 @@
 .gc-factory-name {
   font-size: 1rem;
   font-weight: 800;
-  color: #f0ebe3;
+  color: var(--foreground);
   line-height: 1.2;
   letter-spacing: -0.01em;
 }
@@ -50,7 +50,7 @@
   font-size: 1.6rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
-  color: #f0ebe3;
+  color: var(--foreground);
   letter-spacing: -0.02em;
   position: relative;
   display: flex;
@@ -85,8 +85,8 @@
   font-size: 0.75rem;
   font-weight: 600;
   border: 1px solid #444;
-  background: #2a2a2a;
-  color: #e8e0d4;
+  background: var(--surface-subtle);
+  color: var(--foreground);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -94,7 +94,7 @@
   transition: background 150ms, border-color 150ms;
 }
 .gc-topbar-btn:hover {
-  background: #333;
+  background: var(--border);
   border-color: #14b8a6;
 }
 
@@ -105,14 +105,14 @@
   font-size: 0.75rem;
   font-weight: 600;
   border: 1px solid #444;
-  background: #2a2a2a;
-  color: #e8e0d4;
+  background: var(--surface-subtle);
+  color: var(--foreground);
   cursor: pointer;
   outline: none;
 }
 .gc-preset-select option {
-  background: #2a2a2a;
-  color: #e8e0d4;
+  background: var(--surface-subtle);
+  color: var(--foreground);
 }
 
 /* ── Widget Grid ─────────────────────────────────────────────────────────── */
@@ -129,23 +129,23 @@
 
 /* ── Widget Card ─────────────────────────────────────────────────────────── */
 .gc-widget {
-  background: #222;
-  border: 1px solid #333;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 4px 4px 12px rgba(0,0,0,0.3), -1px -1px 4px rgba(255,255,255,0.02);
+  box-shadow: 4px 4px 12px rgba(15, 23, 42, 0.06), -1px -1px 4px transparent;
   transition: box-shadow 200ms;
   min-height: 0;
 }
 .gc-widget:hover {
-  box-shadow: 4px 4px 16px rgba(0,0,0,0.4), -1px -1px 4px rgba(255,255,255,0.03);
+  box-shadow: 4px 4px 16px rgba(15, 23, 42, 0.08), -1px -1px 4px transparent;
 }
 
 .gc-drag-overlay {
   opacity: 0.85;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
 }
 
 .gc-widget-header {
@@ -155,7 +155,7 @@
   justify-content: space-between;
   padding: 0.55rem 0.75rem;
   border-top: 3px solid #14b8a6;
-  background: #282828;
+  background: var(--surface-subtle);
   cursor: grab;
   user-select: none;
 }
@@ -176,7 +176,7 @@
 .gc-widget-title {
   font-size: 0.78rem;
   font-weight: 700;
-  color: #e8e0d4;
+  color: var(--foreground);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -201,8 +201,8 @@
   transition: background 120ms, color 120ms;
 }
 .gc-widget-btn:hover {
-  background: #333;
-  color: #e8e0d4;
+  background: var(--border);
+  color: var(--foreground);
 }
 
 .gc-widget-body {
@@ -218,7 +218,7 @@
   top: 100%;
   inset-inline-end: 0;
   margin-top: 4px;
-  background: #2a2a2a;
+  background: var(--surface-subtle);
   border: 1px solid #444;
   border-radius: 0.5rem;
   padding: 4px;
@@ -226,14 +226,14 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .gc-resize-option {
   padding: 4px 12px;
   border: none;
   background: transparent;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.7rem;
   font-weight: 600;
   border-radius: 4px;
@@ -272,7 +272,7 @@
 .gc-lane {
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
+  background: var(--panel);
   border-radius: 0.5rem;
   overflow: hidden;
   min-height: 0;
@@ -283,7 +283,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -316,11 +316,11 @@
   border-inline-start: 3px solid;
   border-radius: 0.5rem;
   padding: 0.5rem 0.6rem;
-  background: #282828;
+  background: var(--surface-subtle);
   transition: background 120ms;
 }
 .gc-queue-card:hover {
-  background: #303030;
+  background: var(--border);
 }
 
 .gc-queue-card-top {
@@ -333,7 +333,7 @@
 .gc-queue-card-title {
   font-size: 0.8rem;
   font-weight: 600;
-  color: #e8e0d4;
+  color: var(--foreground);
   line-height: 1.35;
 }
 
@@ -384,18 +384,18 @@
 
 .gc-action-complete {
   background: #14b8a6;
-  color: #fff;
+  color: var(--accent-foreground);
 }
 .gc-action-complete:hover {
   background: #0f9a8d;
 }
 
 .gc-action-back {
-  background: #44403c44;
+  background: var(--surface-subtle);
   color: #9e9080;
 }
 .gc-action-back:hover {
-  background: #44403c88;
+  background: rgba(15, 23, 42, 0.06);
 }
 
 .gc-done-check {
@@ -422,11 +422,11 @@
   align-items: center;
   padding: 0.55rem 0.65rem;
   cursor: pointer;
-  background: #282828;
+  background: var(--surface-subtle);
   transition: background 120ms;
 }
 .gc-project-header:hover {
-  background: #303030;
+  background: var(--border);
 }
 
 .gc-project-info {
@@ -465,7 +465,7 @@
 .gc-project-name {
   font-size: 0.82rem;
   font-weight: 600;
-  color: #e8e0d4;
+  color: var(--foreground);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -482,7 +482,7 @@
 .gc-progress-bar {
   flex: 1;
   height: 4px;
-  background: #333;
+  background: var(--border);
   border-radius: 9999px;
   overflow: hidden;
 }
@@ -508,7 +508,7 @@
 }
 
 .gc-project-tasks {
-  background: #1e1e1e;
+  background: var(--panel);
   padding: 4px 6px;
   display: flex;
   flex-direction: column;
@@ -525,7 +525,7 @@
   transition: background 120ms;
 }
 .gc-project-task-row:hover {
-  background: #282828;
+  background: var(--surface-subtle);
 }
 
 .gc-task-status-dot {
@@ -537,7 +537,7 @@
 
 .gc-task-title-sm {
   font-size: 0.72rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   flex: 1;
   min-width: 0;
   white-space: nowrap;
@@ -619,11 +619,11 @@
   gap: 0.6rem;
   padding: 0.45rem 0.55rem;
   border-radius: 0.5rem;
-  background: #282828;
+  background: var(--surface-subtle);
   transition: background 120ms;
 }
 .gc-team-row:hover {
-  background: #303030;
+  background: var(--border);
 }
 
 .gc-team-avatar {
@@ -635,7 +635,7 @@
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 700;
-  color: white;
+  color: var(--accent-foreground);
   flex-shrink: 0;
 }
 
@@ -653,7 +653,7 @@
 .gc-team-name {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #e8e0d4;
+  color: var(--foreground);
 }
 
 .gc-team-role {
@@ -691,7 +691,7 @@
 .gc-team-bar {
   width: 100%;
   height: 3px;
-  background: #333;
+  background: var(--border);
   border-radius: 9999px;
   margin-top: 4px;
   overflow: hidden;
@@ -719,7 +719,7 @@
   border: none;
   outline: none;
   resize: none;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.78rem;
   line-height: 1.6;
   font-family: inherit;
@@ -741,15 +741,15 @@
 .gc-cal-day {
   display: flex;
   flex-direction: column;
-  background: #1e1e1e;
+  background: var(--panel);
   border-radius: 0.5rem;
   overflow: hidden;
   min-height: 0;
 }
 
 .gc-cal-today {
-  border: 1px solid #14b8a644;
-  background: #1e2a28;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
 }
 
 .gc-cal-day-header {
@@ -757,7 +757,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.35rem 0.5rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -772,7 +772,7 @@
 .gc-cal-day-num {
   font-size: 0.72rem;
   font-weight: 700;
-  color: #e8e0d4;
+  color: var(--foreground);
 }
 
 .gc-cal-tasks {
@@ -795,7 +795,7 @@
 .gc-cal-task-title {
   font-size: 0.62rem;
   font-weight: 600;
-  color: #e8e0d4;
+  color: var(--foreground);
   display: block;
   white-space: nowrap;
   overflow: hidden;
@@ -831,7 +831,7 @@
   transition: background 120ms;
 }
 .gc-feed-item:hover {
-  background: #282828;
+  background: var(--surface-subtle);
 }
 
 .gc-feed-icon {
@@ -852,7 +852,7 @@
 
 .gc-feed-msg {
   font-size: 0.75rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   line-height: 1.35;
 }
 
@@ -866,7 +866,7 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.10);
   display: flex;
   justify-content: flex-end;
 }
@@ -874,8 +874,8 @@
 .gc-sheet {
   width: 400px;
   max-width: 90vw;
-  background: #222;
-  border-inline-start: 1px solid #333;
+  background: var(--surface-subtle);
+  border-inline-start: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -892,7 +892,7 @@
   align-items: flex-start;
   justify-content: space-between;
   padding: 1rem 1.25rem;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
 
@@ -907,7 +907,7 @@
 .gc-sheet-title {
   font-size: 1.1rem;
   font-weight: 700;
-  color: #e8e0d4;
+  color: var(--foreground);
   margin-top: 3px;
 }
 
@@ -936,7 +936,7 @@
 
 .gc-sheet-value {
   font-size: 0.82rem;
-  color: #e8e0d4;
+  color: var(--foreground);
 }
 
 .gc-sheet-section {
@@ -947,7 +947,7 @@
   color: #9e9080;
   margin-top: 0.5rem;
   padding-top: 0.5rem;
-  border-top: 1px solid #333;
+  border-top: 1px solid var(--border);
 }
 
 .gc-sheet-tasks {
@@ -962,13 +962,13 @@
   gap: 0.5rem;
   padding: 0.45rem 0.55rem;
   border-radius: 0.4rem;
-  background: #282828;
+  background: var(--surface-subtle);
 }
 
 .gc-sheet-task-title {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #e8e0d4;
+  color: var(--foreground);
 }
 
 .gc-sheet-task-meta {
@@ -982,20 +982,20 @@
   position: fixed;
   inset: 0;
   z-index: 200;
-  background: rgba(0,0,0,0.5);
+  background: rgba(15, 23, 42, 0.10);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .gc-dialog {
-  background: #2a2a2a;
+  background: var(--surface-subtle);
   border: 1px solid #444;
   border-radius: 0.75rem;
   padding: 1.25rem;
   width: 320px;
   max-width: 90vw;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.10);
   animation: gc-dialog-in 200ms ease-out;
 }
 
@@ -1007,7 +1007,7 @@
 .gc-dialog-title {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #e8e0d4;
+  color: var(--foreground);
   margin-bottom: 0.75rem;
 }
 
@@ -1023,9 +1023,9 @@
   gap: 0.5rem;
   padding: 0.55rem 0.65rem;
   border-radius: 0.5rem;
-  border: 1px solid #333;
-  background: #222;
-  color: #e8e0d4;
+  border: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--foreground);
   font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
@@ -1034,21 +1034,21 @@
   text-align: start;
 }
 .gc-dialog-item:hover {
-  background: #303030;
+  background: var(--border);
   border-color: #14b8a644;
 }
 
 /* ── Form Dialog ── */
 .gc-form-dialog {
-  background: #222;
-  border: 1px solid #333;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 0.75rem;
   padding: 1.25rem;
   width: 420px;
   max-width: 90vw;
   max-height: 85vh;
   overflow-y: auto;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  box-shadow: 0 16px 48px rgba(15, 23, 42, 0.10);
   animation: gc-dialog-in 200ms ease-out;
 }
 .gc-form-dialog-header {
@@ -1076,11 +1076,11 @@
   letter-spacing: 0.04em;
 }
 .gc-form-input {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--background);
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
   padding: 0.45rem 0.55rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.78rem;
   outline: none;
   transition: border-color 150ms;
@@ -1089,11 +1089,11 @@
   border-color: #14b8a6;
 }
 .gc-form-textarea {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--background);
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
   padding: 0.45rem 0.55rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.78rem;
   resize: vertical;
   outline: none;
@@ -1114,9 +1114,9 @@
 .gc-form-priority-btn {
   flex: 1;
   padding: 0.35rem 0.4rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.35rem;
-  background: #1a1a1a;
+  background: var(--background);
   color: #999;
   font-size: 0.7rem;
   font-weight: 600;
@@ -1125,7 +1125,7 @@
 }
 .gc-form-priority-btn:hover {
   border-color: #555;
-  color: #e8e0d4;
+  color: var(--foreground);
 }
 .gc-form-priority-active {
   border-color: #14b8a6;
@@ -1145,7 +1145,7 @@
 }
 .gc-form-cancel-btn {
   padding: 0.4rem 0.75rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
   background: transparent;
   color: #999;
@@ -1154,7 +1154,7 @@
   transition: all 120ms;
 }
 .gc-form-cancel-btn:hover {
-  color: #e8e0d4;
+  color: var(--foreground);
   border-color: #555;
 }
 .gc-form-submit-btn {
@@ -1176,11 +1176,11 @@
   cursor: not-allowed;
 }
 .gc-form-select {
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--background);
+  border: 1px solid var(--border);
   border-radius: 0.4rem;
   padding: 0.45rem 0.55rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.78rem;
   outline: none;
   transition: border-color 150ms;
@@ -1194,7 +1194,7 @@
   display: flex;
   gap: 4px;
   padding: 0.4rem 0.5rem;
-  background: #1a1a1a;
+  background: var(--background);
   border-radius: 0.35rem;
   align-items: center;
 }
@@ -1202,10 +1202,10 @@
   flex: 1;
   min-width: 0;
   background: transparent;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.3rem;
   padding: 0.3rem 0.4rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.72rem;
   outline: none;
 }
@@ -1213,11 +1213,11 @@
   border-color: #14b8a6;
 }
 .gc-inline-form select {
-  background: #222;
-  border: 1px solid #333;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 0.3rem;
   padding: 0.3rem 0.35rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.7rem;
   outline: none;
 }
@@ -1242,7 +1242,7 @@
 /* ── Add Task Button on project header ── */
 .gc-add-task-btn {
   background: transparent;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.3rem;
   width: 20px;
   height: 20px;
@@ -1266,7 +1266,7 @@
 /* ── Today button on task rows ── */
 .gc-today-btn {
   padding: 0.15rem 0.4rem;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.25rem;
   background: transparent;
   color: #8b5cf6;
@@ -1302,17 +1302,17 @@
 .gc-notes-popover {
   margin-top: 0.35rem;
   padding: 0.4rem;
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--background);
+  border: 1px solid var(--border);
   border-radius: 0.35rem;
 }
 .gc-notes-popover textarea {
   width: 100%;
   background: transparent;
-  border: 1px solid #333;
+  border: 1px solid var(--border);
   border-radius: 0.3rem;
   padding: 0.3rem 0.4rem;
-  color: #e8e0d4;
+  color: var(--foreground);
   font-size: 0.72rem;
   font-family: inherit;
   resize: vertical;
@@ -1356,10 +1356,10 @@
   padding: 0.4rem;
 }
 .gc-sheet-task-clickable:hover {
-  background: #2a2a2a;
+  background: var(--surface-subtle);
 }
 .gc-sheet-task-expanded {
-  background: #1a1a1a;
+  background: var(--background);
   border-radius: 0.35rem;
   padding: 0.5rem;
   margin-bottom: 0.25rem;
@@ -1397,11 +1397,11 @@
   bottom: 56px;
   inset-inline-end: 0;
   width: 300px;
-  background: #222;
-  border: 1px solid #333;
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
   border-radius: 0.6rem;
   padding: 0.85rem;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.10);
   animation: gc-dialog-in 150ms ease-out;
 }
 .gc-quick-add-panel .gc-dialog-title {
@@ -1414,5 +1414,24 @@
   }
   .gc-grid > * {
     grid-column: span 1 !important;
+  }
+}
+
+/* Phase 7 — Mobile layout for ops workspace. The desktop screen is
+   absolutely-positioned to lock the kanban into the viewport. On phones,
+   we let it flow with the rest of the page so the sticky AppLayout
+   topbar (hamburger + bell) stays visible above. */
+@media (max-width: 767px) {
+  .gc-screen {
+    position: static;
+    inset: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    min-height: 75vh;
+  }
+  .gc-grid {
+    overflow: visible;
+    height: auto;
   }
 }

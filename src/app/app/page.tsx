@@ -1,140 +1,131 @@
 import { requirePermission } from "@/modules/auth/guards";
 import { DashboardService } from "@/modules/dashboard/dashboard.service";
+import { MetricCard, StatusPill } from "@/components/ui";
+import {
+  arabicGreeting,
+  formatDateAr,
+  formatNumber,
+  formatRelativeTime,
+  formatSAR,
+} from "@/lib/format";
 
 const dashboardService = new DashboardService();
-
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
-function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
-}
 
 export default async function AppHomePage() {
   const session = await requirePermission("dashboard:view");
   const snapshot = await dashboardService.getSnapshot(session.factoryId);
+
   const setupEntries = [
-    {
-      label: "Environment configured",
-      complete: snapshot.setup.envReady,
-    },
-    {
-      label: "Customers added",
-      complete: snapshot.setup.hasCustomers,
-    },
-    {
-      label: "Orders created",
-      complete: snapshot.setup.hasOrders,
-    },
-    {
-      label: "More than one active user",
-      complete: snapshot.setup.hasMultipleUsers,
-    },
+    { label: "البيئة مُهيأة", complete: snapshot.setup.envReady },
+    { label: "العملاء مضافون", complete: snapshot.setup.hasCustomers },
+    { label: "الطلبات منشأة", complete: snapshot.setup.hasOrders },
+    { label: "أكثر من مستخدم نشط", complete: snapshot.setup.hasMultipleUsers },
   ];
+
+  const greeting = arabicGreeting();
+  const ownerFirstName = session.displayName.split(" ")[0] || session.displayName;
 
   return (
     <main className="space-y-6">
-      <section className="panel">
-        <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Dashboard
-        </p>
-        <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-          Live factory snapshot
-        </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          This page now reads actual database records for the signed-in factory.
-          No mock counters or canned activity are used here.
-        </p>
-        <div className="mt-6 rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-5 py-4">
-          <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Current session
-          </p>
-          <div className="mt-3 grid gap-2 text-sm md:grid-cols-2">
-            <p><span className="text-[var(--muted-foreground)]">Name:</span> {session.displayName}</p>
-            <p><span className="text-[var(--muted-foreground)]">Email:</span> {session.email}</p>
-            <p><span className="text-[var(--muted-foreground)]">Role:</span> {session.role}</p>
-            <p><span className="text-[var(--muted-foreground)]">Factory:</span> {session.factoryName}</p>
+      {/* ── Greeting + hero metric ───────────────────────────────────── */}
+      <section className="grid gap-4 md:grid-cols-[1.4fr_1fr] xl:grid-cols-[1.6fr_1fr]">
+        <article className="panel flex flex-col justify-between gap-6">
+          <div>
+            <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
+              لقطة المصنع المباشرة
+            </p>
+            <h1 className="mt-3 text-3xl md:text-4xl font-semibold tracking-tight">
+              مرحباً، {ownerFirstName} · {greeting}
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm md:text-base leading-7 md:leading-8 text-[var(--muted-foreground)]">
+              {session.factoryName} · {session.role}
+            </p>
           </div>
-        </div>
-      </section>
 
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {[
-          {
-            label: "Customers",
-            value: snapshot.stats.totalCustomers.toString(),
-          },
-          {
-            label: "Orders",
-            value: snapshot.stats.totalOrders.toString(),
-          },
-          {
-            label: "Active orders",
-            value: snapshot.stats.activeOrders.toString(),
-          },
-          {
-            label: "Delivered orders",
-            value: snapshot.stats.deliveredOrders.toString(),
-          },
-          {
-            label: "Quoted revenue",
-            value: formatCurrency(snapshot.stats.quotedRevenue, session.factoryCurrency),
-          },
-          {
-            label: "Active users",
-            value: snapshot.stats.activeUsers.toString(),
-          },
-        ].map((item) => (
-          <article key={item.label} className="panel">
-            <p className="text-sm text-[var(--muted-foreground)]">{item.label}</p>
-            <h2 className="mt-2 text-3xl font-semibold">{item.value}</h2>
-          </article>
-        ))}
-      </section>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <MetricCard
+              size="hero"
+              label="الطلبات النشطة"
+              tone="accent"
+              value={formatNumber(snapshot.stats.activeOrders)}
+              sublabel="قيد التنفيذ الآن"
+              trend="up"
+            />
+            <MetricCard
+              size="hero"
+              label="الإيرادات المسعّرة"
+              tone="default"
+              value={formatSAR(snapshot.stats.quotedRevenue, { currency: session.factoryCurrency, decimals: 0 })}
+              sublabel="عبر جميع الطلبات"
+            />
+          </div>
+        </article>
 
-      <section className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr_0.95fr]">
         <article className="panel">
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Setup health
+            صحة الإعداد
           </p>
-          <div className="mt-5 space-y-3">
+          <div className="mt-5 space-y-2.5">
             {setupEntries.map((entry) => (
               <div
                 key={entry.label}
                 className="flex items-center justify-between rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3"
               >
                 <span className="text-sm">{entry.label}</span>
-                <span
-                  className={
-                    entry.complete
-                      ? "rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700"
-                      : "rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700"
-                  }
-                >
-                  {entry.complete ? "Ready" : "Pending"}
-                </span>
+                <StatusPill
+                  status={entry.complete ? "DONE" : "WAITING"}
+                  label={entry.complete ? "جاهز" : "معلّق"}
+                  size="sm"
+                />
               </div>
             ))}
           </div>
         </article>
+      </section>
 
+      {/* ── Secondary metrics row ───────────────────────────────────── */}
+      <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricCard
+          label="العملاء"
+          value={formatNumber(snapshot.stats.totalCustomers)}
+          sublabel="إجمالي السجلات"
+        />
+        <MetricCard
+          label="الطلبات"
+          value={formatNumber(snapshot.stats.totalOrders)}
+          sublabel={`${formatNumber(snapshot.stats.deliveredOrders)} تم التسليم`}
+        />
+        <MetricCard
+          label="المسلّمة"
+          value={formatNumber(snapshot.stats.deliveredOrders)}
+          tone="accent"
+          sublabel="مكتملة"
+        />
+        <MetricCard
+          label="المستخدمون النشطون"
+          value={formatNumber(snapshot.stats.activeUsers)}
+          sublabel="يصلون الآن"
+        />
+      </section>
+
+      {/* ── Tertiary strip — quick session counts ───────────────────── */}
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard size="compact" label="الاسم" value={session.displayName} tone="muted" />
+        <MetricCard size="compact" label="البريد" value={session.email} tone="muted" />
+        <MetricCard size="compact" label="الدور" value={session.role} tone="muted" />
+        <MetricCard size="compact" label="المصنع" value={session.factoryName} tone="muted" />
+      </section>
+
+      {/* ── Latest activity row ─────────────────────────────────────── */}
+      <section className="grid gap-6 xl:grid-cols-2">
         <article className="panel">
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Recent orders
+            أحدث الطلبات
           </p>
           <div className="mt-5 space-y-3">
             {snapshot.recentOrders.length === 0 ? (
               <p className="text-sm text-[var(--muted-foreground)]">
-                No orders yet.
+                لا توجد طلبات بعد.
               </p>
             ) : (
               snapshot.recentOrders.map((order) => (
@@ -143,19 +134,19 @@ export default async function AppHomePage() {
                   className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-semibold">{order.code}</p>
-                      <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+                      <p className="mt-1 text-sm text-[var(--muted-foreground)] truncate">
                         {order.title}
                       </p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {order.status}
-                    </span>
+                    <StatusPill status={order.status} size="sm" />
                   </div>
-                  <div className="mt-3 flex items-center justify-between gap-4 text-sm text-[var(--muted-foreground)]">
+                  <div className="mt-3 flex items-center justify-between gap-4 text-xs text-[var(--muted-foreground)]">
                     <span>{order.customerName}</span>
-                    <span>{formatDate(order.createdAt)}</span>
+                    <span title={formatDateAr(order.createdAt)}>
+                      {formatRelativeTime(order.createdAt)}
+                    </span>
                   </div>
                 </div>
               ))
@@ -165,12 +156,12 @@ export default async function AppHomePage() {
 
         <article className="panel">
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Recent customers
+            أحدث العملاء
           </p>
           <div className="mt-5 space-y-3">
             {snapshot.recentCustomers.length === 0 ? (
               <p className="text-sm text-[var(--muted-foreground)]">
-                No customers yet.
+                لا يوجد عملاء بعد.
               </p>
             ) : (
               snapshot.recentCustomers.map((customer) => (
@@ -179,18 +170,20 @@ export default async function AppHomePage() {
                   className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="font-semibold">{customer.name}</p>
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{customer.name}</p>
                       <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                        {customer.phone ?? "No phone"}
+                        {customer.phone ?? "لا يوجد هاتف"}
                       </p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                      {customer.orderCount} orders
-                    </span>
+                    <StatusPill
+                      status="PLANNED"
+                      label={`${formatNumber(customer.orderCount)} طلبات`}
+                      size="sm"
+                    />
                   </div>
-                  <p className="mt-3 text-sm text-[var(--muted-foreground)]">
-                    Added on {formatDate(customer.createdAt)}
+                  <p className="mt-3 text-xs text-[var(--muted-foreground)]">
+                    أُضيف {formatRelativeTime(customer.createdAt)}
                   </p>
                 </div>
               ))

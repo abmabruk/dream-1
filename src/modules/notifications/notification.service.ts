@@ -18,10 +18,10 @@ import type {
 
 function formatDate(value: Date | null | undefined) {
   if (!value) {
-    return "No date";
+    return "لا يوجد تاريخ";
   }
 
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ar-SA", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -129,8 +129,8 @@ export class NotificationService {
       drafts.push({
         dedupeKey: `ORDER_OVERDUE:${order.id}`,
         type: "ORDER_OVERDUE",
-        title: `Order ${order.code} is overdue`,
-        message: `${order.title} for ${order.customer.name} is ${daysLate} day${daysLate === 1 ? "" : "s"} late and still in ${ORDER_STATUS_LABELS[order.status]}.`,
+        title: `الطلب ${order.code} متأخر`,
+        message: `${order.title} للعميل ${order.customer.name} متأخر ${daysLate} ${daysLate === 1 ? "يوم" : "أيام"} ولا يزال في حالة ${ORDER_STATUS_LABELS[order.status]}.`,
         href: `/app/orders/${order.id}`,
         entityType: "ORDER",
         entityId: order.id,
@@ -140,13 +140,13 @@ export class NotificationService {
     for (const inquiry of dueFollowUps) {
       const assigneeName = inquiry.assignedTo
         ? `${inquiry.assignedTo.firstName} ${inquiry.assignedTo.lastName}`.trim()
-        : "Unassigned";
+        : "غير معين";
 
       drafts.push({
         dedupeKey: `CRM_FOLLOW_UP_DUE:${inquiry.id}`,
         type: "CRM_FOLLOW_UP_DUE",
-        title: `Follow-up due for ${inquiry.name}`,
-        message: `${INQUIRY_STAGE_LABELS[inquiry.stage]} inquiry with ${assigneeName} was due on ${formatDate(inquiry.nextFollowUpAt)}.`,
+        title: `موعد متابعة ${inquiry.name}`,
+        message: `استفسار ${INQUIRY_STAGE_LABELS[inquiry.stage]} مع ${assigneeName} كان مستحقاً بتاريخ ${formatDate(inquiry.nextFollowUpAt)}.`,
         href: `/app/crm#inquiry-${inquiry.id}`,
         entityType: "INQUIRY",
         entityId: inquiry.id,
@@ -159,8 +159,8 @@ export class NotificationService {
       drafts.push({
         dedupeKey: `ASSIGNMENT_BLOCKED:${assignment.id}`,
         type: "ASSIGNMENT_BLOCKED",
-        title: `Blocked assignment at ${assignment.station}`,
-        message: `${workerName} has a ${ASSIGNMENT_STATUS_LABELS[assignment.status].toLowerCase()} assignment on ${assignment.order.code} for ${assignment.order.customer.name}.`,
+        title: `مهمة متوقفة في ${assignment.station}`,
+        message: `${workerName} لديه مهمة ${ASSIGNMENT_STATUS_LABELS[assignment.status]} في الطلب ${assignment.order.code} للعميل ${assignment.order.customer.name}.`,
         href: `/app/orders/${assignment.orderId}`,
         entityType: "ASSIGNMENT",
         entityId: assignment.id,
@@ -171,8 +171,8 @@ export class NotificationService {
       drafts.push({
         dedupeKey: `CUSTOMER_APPROVAL_PENDING:${order.id}`,
         type: "CUSTOMER_APPROVAL_PENDING",
-        title: `Customer approval pending for ${order.code}`,
-        message: `${order.customer.name} has not approved this quoted order since ${formatDate(order.portalAccess?.createdAt)}.`,
+        title: `بانتظار موافقة العميل على ${order.code}`,
+        message: `${order.customer.name} لم يوافق على هذا الطلب منذ ${formatDate(order.portalAccess?.createdAt)}.`,
         href: `/app/orders/${order.id}`,
         entityType: "ORDER",
         entityId: order.id,

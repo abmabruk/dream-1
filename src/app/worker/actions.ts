@@ -6,15 +6,7 @@ import { requirePermission } from "@/modules/auth/guards";
 import { AttendanceService } from "@/modules/attendance/attendance.service";
 import { AssignmentService } from "@/modules/production/assignment.service";
 
-export type WorkerActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export const initialWorkerActionState: WorkerActionState = {
-  error: null,
-  success: null,
-};
+import type { WorkerActionState } from "./state";
 
 const attendanceService = new AttendanceService();
 const assignmentService = new AssignmentService();
@@ -42,11 +34,11 @@ export async function clockInAction(
 
     return {
       error: null,
-      success: "Clock-in recorded.",
+      success: "تم تسجيل الحضور بنجاح.",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not clock in.",
+      error: error instanceof Error ? error.message : "تعذّر تسجيل الحضور.",
       success: null,
     };
   }
@@ -69,11 +61,11 @@ export async function clockOutAction(
 
     return {
       error: null,
-      success: "Clock-out recorded.",
+      success: "تم تسجيل الانصراف بنجاح.",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not clock out.",
+      error: error instanceof Error ? error.message : "تعذّر تسجيل الانصراف.",
       success: null,
     };
   }
@@ -101,14 +93,14 @@ export async function updateAssignmentStatusAction(
 
     return {
       error: null,
-      success: "Assignment updated.",
+      success: "تم تحديث المهمة بنجاح.",
     };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
-          : "Could not update assignment.",
+          : "تعذّر تحديث المهمة.",
       success: null,
     };
   }

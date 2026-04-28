@@ -101,9 +101,83 @@ async function main() {
     });
   }
 
+  // --- Default project stages ---
+  const defaultStages = [
+    {
+      slug: "lead_brief",
+      name: "استلام واستفسار",
+      ownerRole: "SALES_MANAGER",
+      sortOrder: 0,
+      requiresDepositAttestation: false,
+    },
+    {
+      slug: "design_quote",
+      name: "تصميم وعرض سعر",
+      ownerRole: "SALES_MANAGER",
+      sortOrder: 1,
+      requiresDepositAttestation: false,
+    },
+    {
+      slug: "deposit_handoff",
+      name: "عربون وتسليم",
+      ownerRole: "OWNER",
+      sortOrder: 2,
+      requiresDepositAttestation: true,
+    },
+    {
+      slug: "engineering_procurement",
+      name: "هندسة ومشتريات",
+      ownerRole: "FACTORY_MANAGER",
+      sortOrder: 3,
+      requiresDepositAttestation: false,
+    },
+    {
+      slug: "production_finishing",
+      name: "إنتاج وتشطيب",
+      ownerRole: "FACTORY_MANAGER",
+      sortOrder: 4,
+      requiresDepositAttestation: false,
+      expectedDays: 14,
+    },
+    {
+      slug: "delivery_install_closeout",
+      name: "تسليم وتركيب وإقفال",
+      ownerRole: "OWNER",
+      sortOrder: 5,
+      requiresDepositAttestation: false,
+    },
+  ];
+
+  for (const stage of defaultStages) {
+    await prisma.projectStage.upsert({
+      where: {
+        factoryId_slug: { factoryId: factory.id, slug: stage.slug },
+      },
+      update: {
+        name: stage.name,
+        ownerRole: stage.ownerRole,
+        sortOrder: stage.sortOrder,
+        requiresDepositAttestation: stage.requiresDepositAttestation,
+        expectedDays: stage.expectedDays ?? null,
+        isActive: true,
+      },
+      create: {
+        factoryId: factory.id,
+        slug: stage.slug,
+        name: stage.name,
+        ownerRole: stage.ownerRole,
+        sortOrder: stage.sortOrder,
+        requiresDepositAttestation: stage.requiresDepositAttestation,
+        expectedDays: stage.expectedDays ?? null,
+        isActive: true,
+      },
+    });
+  }
+
   console.log("Seeded default owner account:");
   console.log("email: owner@dream1.local");
   console.log("password: dream12345");
+  console.log(`Seeded ${defaultStages.length} default project stages.`);
 }
 
 main()

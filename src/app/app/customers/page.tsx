@@ -1,5 +1,6 @@
 import { requirePermission } from "@/modules/auth/guards";
 import { CustomerService } from "@/modules/customers/customer.service";
+import { EmptyState } from "@/components/ui";
 
 import { CreateCustomerForm } from "./create-customer-form";
 
@@ -13,12 +14,12 @@ export default async function CustomersPage() {
     <main className="space-y-6">
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Customers
+          العملاء
         </p>
-        <h1 className="mt-3 text-3xl font-semibold">Factory customer records</h1>
+        <h1 className="mt-3 text-3xl font-semibold">سجلات عملاء المصنع</h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          Customers are now real persisted records scoped to the signed-in factory.
-          Orders can only be created against customers that belong to the same workspace.
+          العملاء الآن سجلات حقيقية مثبتة مُحدّدة بنطاق المصنع المسجل دخوله.
+          لا يمكن إنشاء الطلبات إلا مقابل العملاء المنتمين إلى نفس المساحة.
         </p>
       </section>
 
@@ -26,47 +27,70 @@ export default async function CustomersPage() {
         <article className="panel overflow-hidden">
           <div className="flex items-center justify-between gap-4 border-b border-[var(--border)] pb-4">
             <div>
-              <h2 className="text-2xl font-semibold">Customer list</h2>
+              <h2 className="text-2xl font-semibold">قائمة العملاء</h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {customers.length} customers in this factory
+                {customers.length} عملاء في هذا المصنع
               </p>
             </div>
           </div>
 
           {customers.length === 0 ? (
-            <div className="py-10 text-sm text-[var(--muted-foreground)]">
-              No customers yet. Create the first one from the form beside this list.
-            </div>
+            <EmptyState
+              heading="لا يوجد عملاء بعد"
+              description="أضف أول عميل من النموذج بجانب هذه القائمة لتبدأ ربط الطلبات."
+              variant="compact"
+            >
+              <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden xmlns="http://www.w3.org/2000/svg">
+                <circle cx="44" cy="32" r="14" fill="var(--accent)" fillOpacity="0.14" />
+                <circle cx="44" cy="32" r="9" stroke="var(--accent)" strokeOpacity="0.7" strokeWidth="2" fill="none" />
+                <path d="M18 72c0-13 12-22 26-22s26 9 26 22" stroke="var(--accent)" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" fill="none" />
+              </svg>
+            </EmptyState>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-[var(--muted-foreground)]">
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="py-3 pr-4 font-medium">Name</th>
-                    <th className="px-4 py-3 font-medium">Phone</th>
-                    <th className="px-4 py-3 font-medium">Location</th>
-                    <th className="px-4 py-3 font-medium">Orders</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {customers.map((customer) => (
-                    <tr key={customer.id} className="border-b border-[var(--border)] last:border-b-0">
-                      <td className="py-4 pr-4">
-                        <p className="font-medium">{customer.name}</p>
-                        <p className="mt-1 text-[var(--muted-foreground)]">
-                          {customer.email ?? "No email"}
-                        </p>
-                      </td>
-                      <td className="px-4 py-4">{customer.phone ?? "No phone"}</td>
-                      <td className="px-4 py-4">
-                        {[customer.city, customer.district].filter(Boolean).join(", ") || "No location"}
-                      </td>
-                      <td className="px-4 py-4">{customer.orderCount}</td>
+            <>
+              <div className="mt-4 hidden overflow-x-auto md:block">
+                <table className="w-full text-start text-sm">
+                  <thead className="text-[var(--muted-foreground)]">
+                    <tr className="border-b border-[var(--border)]">
+                      <th className="py-3 pe-4 font-medium">الاسم</th>
+                      <th className="px-4 py-3 font-medium">الهاتف</th>
+                      <th className="px-4 py-3 font-medium">الموقع</th>
+                      <th className="px-4 py-3 font-medium">الطلبات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {customers.map((customer) => (
+                      <tr key={customer.id} className="border-b border-[var(--border)] last:border-b-0">
+                        <td className="py-4 pe-4">
+                          <p className="font-medium">{customer.name}</p>
+                          <p className="mt-1 text-[var(--muted-foreground)]">
+                            {customer.email ?? "لا يوجد بريد إلكتروني"}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">{customer.phone ?? "لا يوجد هاتف"}</td>
+                        <td className="px-4 py-4">
+                          {[customer.city, customer.district].filter(Boolean).join(", ") || "لا يوجد موقع"}
+                        </td>
+                        <td className="px-4 py-4 tabular-nums">{customer.orderCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="mt-4 grid gap-3 md:hidden">
+                {customers.map((customer) => (
+                  <article key={customer.id} className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] p-4">
+                    <p className="font-semibold">{customer.name}</p>
+                    <p className="mt-1 text-sm text-[var(--muted-foreground)]">{customer.email ?? "لا يوجد بريد إلكتروني"}</p>
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted-foreground)]">
+                      <span>الهاتف: {customer.phone ?? "—"}</span>
+                      <span>الموقع: {[customer.city, customer.district].filter(Boolean).join(", ") || "—"}</span>
+                      <span>الطلبات: {customer.orderCount}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </>
           )}
         </article>
 

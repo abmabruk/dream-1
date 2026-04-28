@@ -3,14 +3,14 @@ import Link from "next/link";
 import { requirePermission } from "@/modules/auth/guards";
 import { hasPermission } from "@/modules/auth/roles";
 import { OrderService } from "@/modules/orders/order.service";
-import {
-  PROJECT_PRIORITY_LABELS,
-  PROJECT_STATUS_LABELS,
-} from "@/modules/projects/project-status";
 import { ProjectService } from "@/modules/projects/project.service";
 import { UserService } from "@/modules/users/user.service";
+import { EmptyState, MetricCard } from "@/components/ui";
+import { formatNumber } from "@/lib/format";
 
 import { CreateProjectForm } from "./create-project-form";
+import { ImportProjectButton } from "./import-project-button";
+import { ProjectsList } from "./projects-list";
 
 const projectService = new ProjectService();
 const orderService = new OrderService();
@@ -18,18 +18,6 @@ const userService = new UserService();
 
 function todayDate() {
   return new Date().toISOString().slice(0, 10);
-}
-
-function formatDate(value: string | null) {
-  if (!value) {
-    return "No due date";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
 }
 
 export default async function ProjectsPage() {
@@ -55,96 +43,83 @@ export default async function ProjectsPage() {
     <main className="space-y-6">
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Projects
+          المشاريع
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-          Internal project control
+          إدارة المشاريع الداخلية
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          Keep projects as clean containers for work. The daily ops board handles what must be
-          executed today, while this page keeps the full picture for each project.
+          احتفظ بالمشاريع كحاويات نظيفة للعمل. تتعامل لوحة العمليات اليومية مع ما يجب
+          تنفيذه اليوم، بينما تحتفظ هذه الصفحة بالصورة الكاملة لكل مشروع.
         </p>
       </section>
 
-      <section className="grid gap-4 md:grid-cols-4">
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">All projects</p>
-          <h2 className="mt-2 text-3xl font-semibold">{projects.length}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Active</p>
-          <h2 className="mt-2 text-3xl font-semibold">{activeProjects.length}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Waiting approval</p>
-          <h2 className="mt-2 text-3xl font-semibold">
-            {projects.reduce((sum, project) => sum + project.waitingApprovalCount, 0)}
-          </h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Queued today</p>
-          <h2 className="mt-2 text-3xl font-semibold">
-            {projects.reduce((sum, project) => sum + project.queuedTodayCount, 0)}
-          </h2>
-        </article>
+      <section className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+        <MetricCard label="جميع المشاريع" value={formatNumber(projects.length)} />
+        <MetricCard label="نشط" tone="accent" value={formatNumber(activeProjects.length)} />
+        <MetricCard
+          label="بانتظار الموافقة"
+          tone="warn"
+          value={formatNumber(
+            projects.reduce((sum, project) => sum + project.waitingApprovalCount, 0)
+          )}
+        />
+        <MetricCard
+          label="مجدول اليوم"
+          value={formatNumber(
+            projects.reduce((sum, project) => sum + project.queuedTodayCount, 0)
+          )}
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <article className="panel overflow-hidden">
           <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
             <div>
-              <h2 className="text-2xl font-semibold">Projects list</h2>
+              <h2 className="text-2xl font-semibold">قائمة المشاريع</h2>
               <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                {projects.length} projects tracked across the factory
+                {projects.length} مشاريع مُتتبّعة عبر المصنع
               </p>
             </div>
-            <Link className="button-secondary" href="/app/ops">
-              Open today ops
-            </Link>
+            <div className="flex items-center gap-2">
+              {canManage ? <ImportProjectButton /> : null}
+              <Link className="button-secondary" href="/app/ops">
+                فتح عمليات اليوم
+              </Link>
+            </div>
           </div>
 
           {projects.length === 0 ? (
-            <div className="py-10 text-sm text-[var(--muted-foreground)]">
-              No projects yet. Create the first one and start adding internal tasks.
-            </div>
+            <EmptyState
+              heading="لا توجد مشاريع بعد"
+              description="أنشئ المشروع الأول من النموذج بجانب القائمة وابدأ بإضافة المهام الداخلية."
+              variant="compact"
+            >
+              <svg width="88" height="88" viewBox="0 0 88 88" fill="none" aria-hidden xmlns="http://www.w3.org/2000/svg">
+                <rect x="14" y="26" width="60" height="44" rx="8" fill="var(--accent)" fillOpacity="0.10" stroke="var(--accent)" strokeOpacity="0.5" strokeWidth="2"/>
+                <path d="M14 36 L34 36 L40 28 L74 28" stroke="var(--accent)" strokeOpacity="0.7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+                <circle cx="44" cy="52" r="9" fill="var(--accent)" fillOpacity="0.20"/>
+                <path d="M40 52 L43 55 L48 49" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </EmptyState>
           ) : (
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="text-[var(--muted-foreground)]">
-                  <tr className="border-b border-[var(--border)]">
-                    <th className="py-3 pr-4 font-medium">Project</th>
-                    <th className="px-4 py-3 font-medium">Status</th>
-                    <th className="px-4 py-3 font-medium">Priority</th>
-                    <th className="px-4 py-3 font-medium">Owner</th>
-                    <th className="px-4 py-3 font-medium">Open tasks</th>
-                    <th className="px-4 py-3 font-medium">Today</th>
-                    <th className="px-4 py-3 font-medium">Due</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {projects.map((project) => (
-                    <tr key={project.id} className="border-b border-[var(--border)] last:border-b-0">
-                      <td className="py-4 pr-4">
-                        <Link className="font-medium hover:underline" href={`/app/projects/${project.id}`}>
-                          {project.code} · {project.name}
-                        </Link>
-                        {project.orderCode && (
-                          <p className="mt-1 text-xs text-[var(--muted-foreground)]">
-                            Linked to {project.orderCode}
-                          </p>
-                        )}
-                      </td>
-                      <td className="px-4 py-4">{PROJECT_STATUS_LABELS[project.status]}</td>
-                      <td className="px-4 py-4">{PROJECT_PRIORITY_LABELS[project.priority]}</td>
-                      <td className="px-4 py-4">{project.ownerName || "Unassigned"}</td>
-                      <td className="px-4 py-4">{project.openTaskCount}</td>
-                      <td className="px-4 py-4">{project.queuedTodayCount}</td>
-                      <td className="px-4 py-4">{formatDate(project.dueDate)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <ProjectsList
+              canManage={canManage}
+              initialProjects={projects.map((p) => ({
+                id: p.id,
+                code: p.code,
+                name: p.name,
+                status: p.status,
+                priority: p.priority,
+                ownerName: p.ownerName,
+                orderCode: p.orderCode,
+                openTaskCount: p.openTaskCount,
+                queuedTodayCount: p.queuedTodayCount,
+                dueDate: p.dueDate,
+                doneTaskCount: p.doneTaskCount,
+                totalTaskCount: p.totalTaskCount,
+              }))}
+            />
           )}
         </article>
 
@@ -164,12 +139,12 @@ export default async function ProjectsPage() {
         ) : (
           <section className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Access
+              الوصول
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">View-only access</h2>
+            <h2 className="mt-2 text-2xl font-semibold">وصول للعرض فقط</h2>
             <p className="mt-4 text-sm leading-7 text-[var(--muted-foreground)]">
-              Your role can monitor projects, but project creation and planning are handled by
-              operations leads.
+              يمكن لدورك مراقبة المشاريع، لكن إنشاء المشاريع والتخطيط لها يتم من قبل
+              قادة العمليات.
             </p>
           </section>
         )}

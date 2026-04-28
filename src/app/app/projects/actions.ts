@@ -30,11 +30,11 @@ export async function createProjectAction(
 
     return {
       error: null,
-      message: "Project created.",
+      message: "تم إنشاء المشروع بنجاح",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not create project.",
+      error: error instanceof Error ? error.message : "تعذّر إنشاء المشروع.",
       message: null,
     };
   }

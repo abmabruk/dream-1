@@ -23,6 +23,10 @@ export async function createProjectTaskAction(
       assignedToUserId: String(formData.get("assignedToUserId") ?? "").trim() || undefined,
       dueDate: String(formData.get("dueDate") ?? "").trim() || undefined,
       requiresApproval: String(formData.get("requiresApproval") ?? "") === "on",
+      stageInstanceId:
+        String(formData.get("stageInstanceId") ?? "").trim() || undefined,
+      locationId:
+        String(formData.get("locationId") ?? "").trim() || undefined,
     });
 
     revalidatePath(`/app/projects/${projectId}`);
@@ -31,11 +35,11 @@ export async function createProjectTaskAction(
 
     return {
       error: null,
-      message: "Task created.",
+      message: "تم إنشاء المهمة بنجاح",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not create task.",
+      error: error instanceof Error ? error.message : "تعذّر إنشاء المهمة.",
       message: null,
     };
   }

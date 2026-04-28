@@ -5,17 +5,9 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/modules/auth/guards";
 import { CustomerService } from "@/modules/customers/customer.service";
 
-export type CreateCustomerActionState = {
-  error: string | null;
-};
-
-const initialCustomerActionState: CreateCustomerActionState = {
-  error: null,
-};
+import type { CreateCustomerActionState } from "./state";
 
 const customerService = new CustomerService();
-
-export { initialCustomerActionState };
 
 export async function createCustomerAction(
   _previousState: CreateCustomerActionState,
@@ -42,7 +34,7 @@ export async function createCustomerAction(
       error:
         error instanceof Error
           ? error.message
-          : "Could not create customer.",
+          : "تعذّر إنشاء العميل.",
     };
   }
 }

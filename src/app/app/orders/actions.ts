@@ -5,13 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/modules/auth/guards";
 import { OrderService } from "@/modules/orders/order.service";
 
-export type CreateOrderActionState = {
-  error: string | null;
-};
-
-export const initialOrderActionState: CreateOrderActionState = {
-  error: null,
-};
+import type { CreateOrderActionState } from "./state";
 
 const orderService = new OrderService();
 
@@ -39,7 +33,7 @@ export async function createOrderAction(
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "Could not create order.",
+        error instanceof Error ? error.message : "تعذّر إنشاء الطلب.",
     };
   }
 }

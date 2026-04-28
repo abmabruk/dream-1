@@ -16,6 +16,8 @@ import {
 import { useRouter } from "next/navigation";
 
 import type { OpsBoardData } from "@/modules/projects/project.schemas";
+import { useToast } from "@/components/ui";
+import { useOpsShortcuts, ShortcutsHelp } from "./use-ops-shortcuts";
 
 import {
   type LayoutPreset,
@@ -24,7 +26,6 @@ import {
   type WidgetLayout,
   defaultWidgetLayouts,
   layoutPresets,
-  ALL_WIDGETS,
   post,
 } from "./shared";
 
@@ -153,6 +154,15 @@ export function OpsWorkspace({
     return () => clearInterval(id);
   }, []);
 
+  // Listen for the QuickAdd "مشروع جديد" trigger from the global FAB
+  useEffect(() => {
+    const handler = () => setShowAddProject(true);
+    window.addEventListener("dream:add-project:open", handler);
+    return () => window.removeEventListener("dream:add-project:open", handler);
+  }, []);
+
+  const { toast } = useToast();
+
   const refresh = useCallback(() => {
     router.refresh();
   }, [router]);
@@ -161,31 +171,41 @@ export function OpsWorkspace({
   const handleStatusChange = useCallback(async (queueItemId: string, status: string) => {
     try {
       await post(`/api/v1/ops/queue/${queueItemId}/status`, { status });
+      toast("✓ تم النقل", "success");
       refresh();
     } catch {
-      // silently fail
+      toast("تعذّر تحديث المهمة", "error");
     }
-  }, [refresh]);
+  }, [refresh, toast]);
 
   // Approve task
   const handleApprove = useCallback(async (taskId: string) => {
     try {
       await post(`/api/v1/projects/tasks/${taskId}/review`, { decision: "approve" });
+      toast("✓ تمّت الموافقة", "success");
       refresh();
     } catch {
-      // silently fail
+      toast("تعذّرت الموافقة", "error");
     }
-  }, [refresh]);
+  }, [refresh, toast]);
 
   // Reject task
   const handleReject = useCallback(async (taskId: string) => {
     try {
       await post(`/api/v1/projects/tasks/${taskId}/review`, { decision: "reject" });
+      toast("تمّ الرفض", "info");
       refresh();
     } catch {
-      // silently fail
+      toast("تعذّر الرفض", "error");
     }
-  }, [refresh]);
+  }, [refresh, toast]);
+
+  // Keyboard shortcuts (J/K, T, D, ?)
+  const { helpOpen, setHelpOpen } = useOpsShortcuts({
+    queue: initialBoard.queue,
+    canManage,
+    onStatusChange: handleStatusChange,
+  });
 
   // DnD
   const sensors = useSensors(
@@ -398,6 +418,8 @@ export function OpsWorkspace({
           onRefresh={refresh}
         />
       )}
+
+      <ShortcutsHelp open={helpOpen} onClose={() => setHelpOpen(false)} />
     </div>
   );
 }

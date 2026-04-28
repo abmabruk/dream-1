@@ -14,33 +14,20 @@ import { UserService } from "@/modules/users/user.service";
 import { CreatePortalAccessForm } from "./create-portal-access-form";
 import { CreateAssignmentForm } from "./create-assignment-form";
 import { UpdateOrderStatusForm } from "./update-order-status-form";
+import { formatDateAr, formatSAR } from "@/lib/format";
 
 const orderService = new OrderService();
 const userService = new UserService();
 const portalService = new PortalService();
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "Not set";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
+  if (!value) return "غير محدد";
+  return formatDateAr(value);
 }
 
 function formatCurrency(value: number | null, currency: string) {
-  if (value == null) {
-    return "Not quoted";
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 2,
-  }).format(value);
+  if (value == null) return "غير مسعّر";
+  return formatSAR(value, { currency });
 }
 
 type PageProps = {
@@ -72,25 +59,25 @@ export default async function OrderDetailPage({ params }: PageProps) {
       <section className="panel">
         <div className="flex flex-wrap items-center gap-3 text-sm text-[var(--muted-foreground)]">
           <Link className="button-secondary" href="/app/orders">
-            Back to orders
+            العودة إلى الطلبات
           </Link>
           <span>{order.code}</span>
         </div>
         <div className="mt-6 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Order detail
+              تفاصيل الطلب
             </p>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight">
               {order.title}
             </h1>
             <p className="mt-3 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-              {order.description || "No description yet."}
+              {order.description || "لا يوجد وصف بعد."}
             </p>
           </div>
           <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
             <p className="text-xs uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Current status
+              الحالة الحالية
             </p>
             <p className="mt-2 text-2xl font-semibold">
               {ORDER_STATUS_LABELS[order.status]}
@@ -101,24 +88,24 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Customer</p>
+          <p className="text-sm text-[var(--muted-foreground)]">العميل</p>
           <h2 className="mt-2 text-xl font-semibold">{order.customer.name}</h2>
           <p className="mt-2 text-sm text-[var(--muted-foreground)]">
-            {order.customer.phone || order.customer.email || "No contact details"}
+            {order.customer.phone || order.customer.email || "لا تتوفر بيانات اتصال"}
           </p>
         </article>
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Target date</p>
+          <p className="text-sm text-[var(--muted-foreground)]">تاريخ الهدف</p>
           <h2 className="mt-2 text-xl font-semibold">{formatDate(order.targetDate)}</h2>
         </article>
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Quoted amount</p>
+          <p className="text-sm text-[var(--muted-foreground)]">المبلغ المسعّر</p>
           <h2 className="mt-2 text-xl font-semibold">
             {formatCurrency(order.quotedAmount, session.factoryCurrency)}
           </h2>
         </article>
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Assignments</p>
+          <p className="text-sm text-[var(--muted-foreground)]">المهام</p>
           <h2 className="mt-2 text-xl font-semibold">{order.assignments.length}</h2>
         </article>
       </section>
@@ -127,42 +114,42 @@ export default async function OrderDetailPage({ params }: PageProps) {
         <div className="space-y-6">
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Workflow
+              سير العمل
             </p>
             <div className="mt-5 grid gap-3">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-sm">
-                <span className="text-[var(--muted-foreground)]">Created:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">تاريخ الإنشاء:</span>{" "}
                 {formatDate(order.createdAt)}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-sm">
-                <span className="text-[var(--muted-foreground)]">Approved:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">تاريخ الاعتماد:</span>{" "}
                 {formatDate(order.approvedAt)}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-sm">
-                <span className="text-[var(--muted-foreground)]">Customer approved:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">موافقة العميل:</span>{" "}
                 {formatDate(order.customerApprovedAt)}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-sm">
-                <span className="text-[var(--muted-foreground)]">Delivered:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">تاريخ التسليم:</span>{" "}
                 {formatDate(order.deliveredAt)}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 text-sm">
-                <span className="text-[var(--muted-foreground)]">Created by:</span>{" "}
-                {order.createdByName || "Unknown"}
+                <span className="text-[var(--muted-foreground)]">أنشأ بواسطة:</span>{" "}
+                {order.createdByName || "غير معروف"}
               </div>
             </div>
           </article>
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Customer portal
+              بوابة العميل
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">Share a live link with the customer.</h2>
+            <h2 className="mt-2 text-2xl font-semibold">شارك رابطاً مباشراً مع العميل.</h2>
             <div className="mt-5 space-y-4">
               {portalAccess ? (
                 <>
                   <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-                    <p className="text-sm text-[var(--muted-foreground)]">Portal link</p>
+                    <p className="text-sm text-[var(--muted-foreground)]">رابط البوابة</p>
                     <a
                       className="mt-2 block break-all text-sm font-medium text-[var(--accent)] underline"
                       href={portalAccess.url}
@@ -174,11 +161,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   </div>
                   <div className="grid gap-3 md:grid-cols-2">
                     <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4 text-sm">
-                      <span className="text-[var(--muted-foreground)]">Shared:</span>{" "}
+                      <span className="text-[var(--muted-foreground)]">تاريخ المشاركة:</span>{" "}
                       {formatDate(portalAccess.createdAt)}
                     </div>
                     <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4 text-sm">
-                      <span className="text-[var(--muted-foreground)]">Last viewed:</span>{" "}
+                      <span className="text-[var(--muted-foreground)]">آخر مشاهدة:</span>{" "}
                       {formatDate(portalAccess.lastViewedAt)}
                     </div>
                   </div>
@@ -188,7 +175,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
               )}
               {order.customerApprovalNote && (
                 <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4 text-sm text-[var(--muted-foreground)]">
-                  Customer note: {order.customerApprovalNote}
+                  ملاحظة العميل: {order.customerApprovalNote}
                 </div>
               )}
             </div>
@@ -196,9 +183,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Status transition
+              تغيير الحالة
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">Move the order forward with audit history.</h2>
+            <h2 className="mt-2 text-2xl font-semibold">انقل الطلب للأمام مع سجل تدقيق.</h2>
             <div className="mt-5">
               {canUpdateStatus ? (
                 <UpdateOrderStatusForm
@@ -208,7 +195,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
                 />
               ) : (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  Your role can view orders but cannot change their status.
+                  يمكن لدورك عرض الطلبات لكن لا يمكنه تغيير حالتها.
                 </p>
               )}
             </div>
@@ -220,15 +207,15 @@ export default async function OrderDetailPage({ params }: PageProps) {
             <div className="flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-                  Production assignments
+                  مهام الإنتاج
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold">Current assignments</h2>
+                <h2 className="mt-2 text-2xl font-semibold">المهام الحالية</h2>
               </div>
             </div>
             <div className="mt-5 space-y-3">
               {order.assignments.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No assignments yet.
+                  لا توجد مهام بعد.
                 </p>
               ) : (
                 order.assignments.map((assignment) => (
@@ -248,8 +235,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
                       </span>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-[var(--muted-foreground)]">
-                      <span>Scheduled: {formatDate(assignment.scheduledFor)}</span>
-                      <span>Created: {formatDate(assignment.createdAt)}</span>
+                      <span>المجدول: {formatDate(assignment.scheduledFor)}</span>
+                      <span>تاريخ الإنشاء: {formatDate(assignment.createdAt)}</span>
                     </div>
                     {assignment.notes && (
                       <p className="mt-3 text-sm text-[var(--muted-foreground)]">
@@ -263,14 +250,14 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
             <div className="mt-6 border-t border-[var(--border)] pt-6">
               <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-                Add assignment
+                إضافة مهمة
               </p>
               <div className="mt-4">
                 {canAssign ? (
                   <CreateAssignmentForm orderId={order.id} workers={workers} />
                 ) : (
                   <p className="text-sm text-[var(--muted-foreground)]">
-                    Your role can view production information but cannot create assignments.
+                    يمكن لدورك عرض معلومات الإنتاج لكن لا يمكنه إنشاء مهام.
                   </p>
                 )}
               </div>
@@ -279,12 +266,12 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Order activity
+              نشاط الطلب
             </p>
             <div className="mt-5 space-y-3">
               {order.events.length === 0 ? (
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  No workflow events yet.
+                  لا توجد أحداث سير عمل بعد.
                 </p>
               ) : (
                 order.events.map((event) => (
@@ -294,9 +281,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold">{event.type.replaceAll("_", " ")}</p>
+                        <p className="font-semibold">{{STATUS_CHANGED: "تغيير الحالة", ASSIGNMENT_CREATED: "إنشاء مهمة", ASSIGNMENT_UPDATED: "تحديث مهمة", PORTAL_ACCESS_CREATED: "إنشاء وصول بوابة", NOTE_ADDED: "إضافة ملاحظة", CREATED: "إنشاء"} [event.type] ?? event.type.replaceAll("_", " ")}</p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-                          {event.actorName || "System"} on {formatDate(event.createdAt)}
+                          {event.actorName || "النظام"} في {formatDate(event.createdAt)}
                         </p>
                       </div>
                       {event.toStatus && (
@@ -308,8 +295,8 @@ export default async function OrderDetailPage({ params }: PageProps) {
                     {(event.fromStatus || event.toStatus) && (
                       <p className="mt-3 text-sm text-[var(--muted-foreground)]">
                         {event.fromStatus
-                          ? `${ORDER_STATUS_LABELS[event.fromStatus]} -> ${event.toStatus ? ORDER_STATUS_LABELS[event.toStatus] : "No status"}`
-                          : `Moved to ${event.toStatus ? ORDER_STATUS_LABELS[event.toStatus] : "No status"}`}
+                          ? `${ORDER_STATUS_LABELS[event.fromStatus]} -> ${event.toStatus ? ORDER_STATUS_LABELS[event.toStatus] : "لا توجد حالة"}`
+                          : `نُقل إلى ${event.toStatus ? ORDER_STATUS_LABELS[event.toStatus] : "لا توجد حالة"}`}
                       </p>
                     )}
                     {event.note && (

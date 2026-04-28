@@ -4,11 +4,8 @@ import { useActionState } from "react";
 
 import type { FactorySettingsSnapshot } from "@/modules/settings/settings.schemas";
 
-import {
-  initialSettingsActionState,
-  updateFactorySettingsAction,
-} from "./actions";
-
+import { updateFactorySettingsAction } from "./actions";
+import { initialSettingsActionState } from "./state";
 export function SettingsForm({
   settings,
 }: {
@@ -23,26 +20,26 @@ export function SettingsForm({
     <form action={formAction} className="panel space-y-5">
       <div>
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Factory profile
+          ملف المصنع
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Core settings</h2>
+        <h2 className="mt-2 text-2xl font-semibold">الإعدادات الأساسية</h2>
         <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
-          These settings affect new order codes, portal branding, displayed
-          currency, and factory identity.
+          تؤثر هذه الإعدادات على رموز الطلبات الجديدة وعلامة البوابة التجارية
+          والعملة المعروضة وهوية المصنع.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium" htmlFor="name">
-            Factory name
+            اسم المصنع
           </label>
           <input className="input-field" defaultValue={settings.name} id="name" name="name" required />
         </div>
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="timezone">
-            Timezone
+            المنطقة الزمنية
           </label>
           <input
             className="input-field"
@@ -55,7 +52,7 @@ export function SettingsForm({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="currency">
-            Currency
+            العملة
           </label>
           <input
             className="input-field"
@@ -69,7 +66,7 @@ export function SettingsForm({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="orderCodePrefix">
-            Order code prefix
+            بادئة رمز الطلب
           </label>
           <input
             className="input-field"
@@ -83,7 +80,7 @@ export function SettingsForm({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="portalDisplayName">
-            Portal display name
+            اسم عرض البوابة
           </label>
           <input
             className="input-field"
@@ -95,7 +92,7 @@ export function SettingsForm({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="supportEmail">
-            Support email
+            البريد الإلكتروني للدعم
           </label>
           <input
             className="input-field"
@@ -108,7 +105,7 @@ export function SettingsForm({
 
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="supportPhone">
-            Support phone
+            هاتف الدعم
           </label>
           <input
             className="input-field"
@@ -132,7 +129,7 @@ export function SettingsForm({
       )}
 
       <button className="button-primary disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Saving..." : "Save settings"}
+        {pending ? "جاري الحفظ..." : "حفظ الإعدادات"}
       </button>
     </form>
   );

@@ -29,21 +29,21 @@ export const OPEN_INQUIRY_STAGE_VALUES = [
 ] as const satisfies InquiryStage[];
 
 export const INQUIRY_STAGE_LABELS: Record<InquiryStage, string> = {
-  NEW: "New",
-  CONTACTED: "Contacted",
-  QUALIFIED: "Qualified",
-  QUOTED: "Quoted",
-  WON: "Won",
-  LOST: "Lost",
+  NEW: "جديد",
+  CONTACTED: "تم التواصل",
+  QUALIFIED: "مؤهل",
+  QUOTED: "تم تقديم عرض سعر",
+  WON: "تم الفوز",
+  LOST: "خسارة",
 };
 
 export const INQUIRY_SOURCE_LABELS: Record<InquirySource, string> = {
-  INSTAGRAM: "Instagram",
-  TIKTOK: "TikTok",
-  SNAPCHAT: "Snapchat",
-  WHATSAPP: "WhatsApp",
-  GOOGLE: "Google",
-  REFERRAL: "Referral",
-  WALK_IN: "Walk-in",
-  OTHER: "Other",
+  INSTAGRAM: "إنستغرام",
+  TIKTOK: "تيك توك",
+  SNAPCHAT: "سناب شات",
+  WHATSAPP: "واتساب",
+  GOOGLE: "جوجل",
+  REFERRAL: "إحالة",
+  WALK_IN: "زيارة مباشرة",
+  OTHER: "أخرى",
 };

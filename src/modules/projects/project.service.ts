@@ -10,14 +10,24 @@ import { OrderRepository } from "@/modules/orders/order.repository";
 import { UserRepository } from "@/modules/users/user.repository";
 import {
   addTaskToTodaySchema,
+  advanceStageInputSchema,
+  attestDepositInputSchema,
+  cloneLocationInputSchema,
+  createLocationInputSchema,
   createProjectSchema,
   createProjectTaskSchema,
   moveQueueItemSchema,
+  moveTaskToProjectSchema,
   opsDateSchema,
   reorderQueueSchema,
   rescheduleQueueItemSchema,
   reviewProjectTaskSchema,
+  reorderLocationsSchema,
+  updateLocationInputSchema,
+  updateLocationOnTaskSchema,
   updateQueueItemSchema,
+  updateTaskStageSchema,
+  updateTaskStatusSchema,
 } from "./project.schemas";
 import { ProjectRepository } from "./project.repository";
 
@@ -156,6 +166,23 @@ export class ProjectService {
     return this.repository.updateQueueItem(factoryId, actorUserId, parsed);
   }
 
+
+  async updateTaskStatus(
+    factoryId: string,
+    actorUserId: string,
+    taskId: string,
+    status: unknown
+  ) {
+    const parsed = updateTaskStatusSchema.parse({ status });
+
+    return this.repository.updateTaskStatusByFactory(
+      factoryId,
+      actorUserId,
+      taskId,
+      parsed.status
+    );
+  }
+
   async reviewTask(
     factoryId: string,
     actor: { userId: string; role: UserRole },
@@ -169,4 +196,208 @@ export class ProjectService {
 
     return this.repository.reviewTask(factoryId, actor.userId, parsed);
   }
+
+  /**
+   * Reorder projects within a factory. Accepts a list of project IDs
+   * in display order (top → bottom). Requires `projects:manage`.
+   */
+  async reorderProjects(factoryId: string, orderedIds: unknown): Promise<void> {
+    if (!Array.isArray(orderedIds)) {
+      throw new HttpError(400, "orderedIds must be an array of project IDs.");
+    }
+    const ids = orderedIds.filter(
+      (v): v is string => typeof v === "string" && v.length > 0,
+    );
+    if (ids.length === 0) {
+      throw new HttpError(400, "orderedIds is empty.");
+    }
+    await this.repository.reorderProjectsByFactory(factoryId, ids);
+  }
+
+
+  // ============================================================
+  // Stages
+  // ============================================================
+
+  async getStageInstances(factoryId: string, projectId: string) {
+    return this.repository.listStageInstancesForProject(factoryId, projectId);
+  }
+
+  async advanceStage(
+    factoryId: string,
+    projectId: string,
+    actorUserId: string,
+    input: unknown
+  ) {
+    const parsed = advanceStageInputSchema.parse(input);
+    try {
+      return await this.repository.advanceStage(
+        factoryId,
+        projectId,
+        parsed.stageInstanceId,
+        actorUserId
+      );
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "DEPOSIT_REQUIRED") {
+        throw new HttpError(
+          409,
+          "DEPOSIT_REQUIRED: لا يمكن التقدم قبل تأكيد استلام العربون.",
+          { code: "DEPOSIT_REQUIRED" }
+        );
+      }
+      throw err;
+    }
+  }
+
+  async startStage(factoryId: string, stageInstanceId: string, actorUserId: string) {
+    return this.repository.startStage(factoryId, stageInstanceId, actorUserId);
+  }
+
+  async backfillProjectStages(
+    factoryId: string,
+    projectId: string,
+    actorUserId: string
+  ) {
+    return this.repository.backfillProjectStages(factoryId, projectId, actorUserId);
+  }
+
+  async attestDeposit(
+    factoryId: string,
+    actorUserId: string,
+    input: unknown
+  ) {
+    const parsed = attestDepositInputSchema.parse(input);
+    return this.repository.attestDeposit(
+      factoryId,
+      parsed.stageInstanceId,
+      actorUserId,
+      parsed
+    );
+  }
+
+  // ============================================================
+  // Locations
+  // ============================================================
+
+  async listLocations(factoryId: string, projectId: string) {
+    return this.repository.listLocations(factoryId, projectId);
+  }
+
+  async createLocation(factoryId: string, actorUserId: string, input: unknown) {
+    const parsed = createLocationInputSchema.parse(input);
+    return this.repository.createLocation(factoryId, actorUserId, parsed);
+  }
+
+  async cloneLocation(
+    factoryId: string,
+    actorUserId: string,
+    sourceLocationId: string,
+    targetProjectId: string,
+    rawOptions?: unknown,
+  ) {
+    const options = cloneLocationInputSchema.parse(rawOptions ?? {});
+    return this.repository.cloneLocation(
+      factoryId,
+      actorUserId,
+      sourceLocationId,
+      targetProjectId,
+      options,
+    );
+  }
+
+  async deleteLocation(
+    factoryId: string,
+    actorUserId: string,
+    locationId: string,
+  ) {
+    try {
+      return await this.repository.deleteLocation(
+        factoryId,
+        actorUserId,
+        locationId,
+      );
+    } catch (err) {
+      const code = (err as { code?: string }).code;
+      if (code === "LOCATION_HAS_TASKS") {
+        throw new HttpError(
+          409,
+          "لا يمكن حذف الموقع لأنه يحتوي على مهام. انقل المهام أولاً.",
+          { code: "LOCATION_HAS_TASKS" },
+        );
+      }
+      if (code === "NOT_FOUND") {
+        throw new HttpError(404, "الموقع غير موجود.");
+      }
+      throw err;
+    }
+  }
+
+  async reorderLocations(
+    factoryId: string,
+    projectId: string,
+    rawInput: unknown,
+  ) {
+    const parsed = reorderLocationsSchema.parse(rawInput);
+    return this.repository.reorderLocations(
+      factoryId,
+      projectId,
+      parsed.orderedIds,
+    );
+  }
+
+  async updateTaskLocation(
+    factoryId: string,
+    actorUserId: string,
+    taskId: string,
+    rawInput: unknown,
+  ) {
+    const parsed = updateLocationOnTaskSchema.parse(rawInput);
+    return this.repository.updateTaskLocation(
+      factoryId,
+      actorUserId,
+      taskId,
+      parsed.locationId,
+    );
+  }
+
+  async updateLocation(factoryId: string, actorUserId: string, input: unknown) {
+    const parsed = updateLocationInputSchema.parse(input);
+    return this.repository.updateLocation(factoryId, actorUserId, parsed);
+  }
+
+  // ============================================================
+  // Wave 3 — task ↔ stage assignment + cross-project move.
+  // ============================================================
+
+  async updateTaskStage(
+    factoryId: string,
+    actorUserId: string,
+    taskId: string,
+    input: unknown,
+  ) {
+    const parsed = updateTaskStageSchema.parse(input);
+    return this.repository.updateTaskStage(
+      factoryId,
+      actorUserId,
+      taskId,
+      parsed.stageInstanceId,
+    );
+  }
+
+  async moveTaskToProject(
+    factoryId: string,
+    actorUserId: string,
+    taskId: string,
+    input: unknown,
+  ) {
+    const parsed = moveTaskToProjectSchema.parse(input);
+    return this.repository.moveTaskToProject(
+      factoryId,
+      actorUserId,
+      taskId,
+      parsed,
+    );
+  }
+
 }

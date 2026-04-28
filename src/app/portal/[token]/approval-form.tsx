@@ -2,11 +2,8 @@
 
 import { useActionState } from "react";
 
-import {
-  approvePortalOrderAction,
-  initialPortalApprovalActionState,
-} from "./actions";
-
+import { approvePortalOrderAction } from "./actions";
+import { initialPortalApprovalActionState } from "./state";
 type Props = {
   token: string;
 };
@@ -23,13 +20,13 @@ export function PortalApprovalForm({ token }: Props) {
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="note">
-          Approval note
+          ملاحظة الموافقة
         </label>
         <textarea
           className="input-field min-h-28"
           id="note"
           name="note"
-          placeholder="Optional note for the factory team"
+          placeholder="ملاحظة اختيارية لفريق المصنع"
         />
       </div>
 
@@ -45,7 +42,7 @@ export function PortalApprovalForm({ token }: Props) {
       )}
 
       <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Submitting..." : "Approve order"}
+        {pending ? "جارٍ الإرسال..." : "الموافقة على الطلب"}
       </button>
     </form>
   );

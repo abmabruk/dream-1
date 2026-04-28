@@ -2,11 +2,8 @@
 
 import { useActionState } from "react";
 
-import {
-  initialUserAdminActionState,
-  resetUserPasswordAction,
-} from "./actions";
-
+import { resetUserPasswordAction } from "./actions";
+import { initialUserAdminActionState } from "./state";
 export function ResetUserPasswordForm({
   userId,
 }: {
@@ -22,15 +19,15 @@ export function ResetUserPasswordForm({
       <input name="userId" type="hidden" value={userId} />
 
       <div>
-        <p className="text-sm font-semibold">Admin password reset</p>
+        <p className="text-sm font-semibold">إعادة تعيين كلمة المرور (مدير)</p>
         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-          Set a new password for this account.
+          تعيين كلمة مرور جديدة لهذا الحساب.
         </p>
       </div>
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor={`password-${userId}`}>
-          New password
+          كلمة المرور الجديدة
         </label>
         <input
           className="input-field"
@@ -55,7 +52,7 @@ export function ResetUserPasswordForm({
       )}
 
       <button className="button-secondary disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Resetting..." : "Reset password"}
+        {pending ? "جاري إعادة التعيين..." : "إعادة تعيين كلمة المرور"}
       </button>
     </form>
   );

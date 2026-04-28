@@ -21,14 +21,14 @@ export const INCOMPLETE_ORDER_STATUS_VALUES = [
 ] as const satisfies OrderWorkflowStatus[];
 
 export const ORDER_STATUS_LABELS: Record<OrderWorkflowStatus, string> = {
-  DRAFT: "Draft",
-  QUOTED: "Quoted",
-  APPROVED: "Approved",
-  IN_PRODUCTION: "In production",
-  QUALITY_CHECK: "Quality check",
-  READY_FOR_DELIVERY: "Ready for delivery",
-  DELIVERED: "Delivered",
-  CANCELLED: "Cancelled",
+  DRAFT: "مسودة",
+  QUOTED: "تم التسعير",
+  APPROVED: "مؤكد",
+  IN_PRODUCTION: "في الإنتاج",
+  QUALITY_CHECK: "فحص الجودة",
+  READY_FOR_DELIVERY: "جاهز للتسليم",
+  DELIVERED: "تم التسليم",
+  CANCELLED: "ملغي",
 };
 
 export const ORDER_STATUS_TRANSITIONS: Record<

@@ -7,35 +7,11 @@ import { OrderService } from "@/modules/orders/order.service";
 import { PortalService } from "@/modules/portal/portal.service";
 import { AssignmentService } from "@/modules/production/assignment.service";
 
-export type OrderStatusActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export type AssignmentActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export type PortalAccessActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export const initialOrderStatusActionState: OrderStatusActionState = {
-  error: null,
-  success: null,
-};
-
-export const initialAssignmentActionState: AssignmentActionState = {
-  error: null,
-  success: null,
-};
-
-export const initialPortalAccessActionState: PortalAccessActionState = {
-  error: null,
-  success: null,
-};
+import type {
+  AssignmentActionState,
+  OrderStatusActionState,
+  PortalAccessActionState,
+} from "./state";
 
 const orderService = new OrderService();
 const assignmentService = new AssignmentService();
@@ -66,12 +42,12 @@ export async function updateOrderStatusAction(
 
     return {
       error: null,
-      success: "Order status updated.",
+      success: "تم تحديث حالة الطلب بنجاح.",
     };
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "Could not update order status.",
+        error instanceof Error ? error.message : "تعذّر تحديث حالة الطلب.",
       success: null,
     };
   }
@@ -97,12 +73,12 @@ export async function createAssignmentAction(
 
     return {
       error: null,
-      success: "Assignment created.",
+      success: "تم إنشاء التكليف بنجاح.",
     };
   } catch (error) {
     return {
       error:
-        error instanceof Error ? error.message : "Could not create assignment.",
+        error instanceof Error ? error.message : "تعذّر إنشاء التكليف.",
       success: null,
     };
   }
@@ -113,7 +89,7 @@ export async function createPortalAccessAction(
   formData: FormData
 ): Promise<PortalAccessActionState> {
   try {
-    const session = await requirePermission("orders:view");
+    const session = await requirePermission("orders:update");
     const orderId = String(formData.get("orderId") ?? "");
 
     await portalService.createStaffPortalAccess(
@@ -126,14 +102,14 @@ export async function createPortalAccessAction(
 
     return {
       error: null,
-      success: "Portal link is ready.",
+      success: "رابط البوابة جاهز.",
     };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
-          : "Could not create portal access.",
+          : "تعذّر إنشاء رابط البوابة.",
       success: null,
     };
   }

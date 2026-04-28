@@ -16,10 +16,10 @@ const assignmentService = new AssignmentService();
 
 function formatDate(value: string | null) {
   if (!value) {
-    return "Not recorded";
+    return "لم يُسجَّل";
   }
 
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ar-SA", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -41,18 +41,17 @@ export default async function WorkerEntryPage() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Worker workspace
+              مساحة العامل
             </p>
             <h1 className="mt-2 text-4xl font-semibold tracking-tight">
-              My production day
+              يوم الإنتاج الخاص بي
             </h1>
             <p className="mt-3 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-              This workspace is now backed by real attendance records and real
-              assignments tied to the signed-in user.
+              هذه المساحة مدعومة الآن بسجلات حضور حقيقية ومهام حقيقية مرتبطة بالمستخدم المسجل دخوله.
             </p>
           </div>
           <Link className="button-secondary" href="/app">
-            Back to dashboard
+            العودة إلى لوحة التحكم
           </Link>
         </div>
       </section>
@@ -60,17 +59,17 @@ export default async function WorkerEntryPage() {
       <section className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <article className="panel">
           <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-            Attendance today
+            الحضور اليوم
           </p>
           <div className="mt-5 grid gap-3">
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-              <p className="text-sm text-[var(--muted-foreground)]">Clocked in</p>
+              <p className="text-sm text-[var(--muted-foreground)]">وقت بدء الدوام</p>
               <p className="mt-2 text-xl font-semibold">
                 {formatDate(attendance?.clockInAt ?? null)}
               </p>
             </div>
             <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-              <p className="text-sm text-[var(--muted-foreground)]">Clocked out</p>
+              <p className="text-sm text-[var(--muted-foreground)]">وقت انتهاء الدوام</p>
               <p className="mt-2 text-xl font-semibold">
                 {formatDate(attendance?.clockOutAt ?? null)}
               </p>
@@ -79,13 +78,13 @@ export default async function WorkerEntryPage() {
 
           <div className="mt-6 grid gap-4 lg:grid-cols-2">
             <div className="rounded-3xl border border-[var(--border)] bg-[var(--panel-strong)] p-4">
-              <p className="text-sm font-medium">Start shift</p>
+              <p className="text-sm font-medium">بدء الوردية</p>
               <div className="mt-3">
                 <AttendanceForm mode="in" />
               </div>
             </div>
             <div className="rounded-3xl border border-[var(--border)] bg-[var(--panel-strong)] p-4">
-              <p className="text-sm font-medium">End shift</p>
+              <p className="text-sm font-medium">إنهاء الوردية</p>
               <div className="mt-3">
                 <AttendanceForm mode="out" />
               </div>
@@ -97,10 +96,10 @@ export default async function WorkerEntryPage() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-                My assignments
+                مهامي
               </p>
               <h2 className="mt-2 text-2xl font-semibold">
-                {assignments.length} assignment{assignments.length === 1 ? "" : "s"}
+                {assignments.length} مهمة
               </h2>
             </div>
           </div>
@@ -108,7 +107,7 @@ export default async function WorkerEntryPage() {
           <div className="mt-5 space-y-4">
             {assignments.length === 0 ? (
               <p className="text-sm text-[var(--muted-foreground)]">
-                No assignments are currently linked to your account.
+                لا توجد مهام مرتبطة بحسابك حالياً.
               </p>
             ) : (
               assignments.map((assignment) => {
@@ -138,8 +137,8 @@ export default async function WorkerEntryPage() {
                     </div>
 
                     <div className="mt-4 grid gap-3 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-                      <p>Scheduled: {formatDate(assignment.scheduledFor)}</p>
-                      <p>Created: {formatDate(assignment.createdAt)}</p>
+                      <p>المجدول: {formatDate(assignment.scheduledFor)}</p>
+                      <p>تاريخ الإنشاء: {formatDate(assignment.createdAt)}</p>
                     </div>
 
                     {assignment.notes && (

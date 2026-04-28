@@ -2,15 +2,7 @@
 
 import { PortalService } from "@/modules/portal/portal.service";
 
-export type PortalApprovalActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export const initialPortalApprovalActionState: PortalApprovalActionState = {
-  error: null,
-  success: null,
-};
+import type { PortalApprovalActionState } from "./state";
 
 const portalService = new PortalService();
 
@@ -26,14 +18,14 @@ export async function approvePortalOrderAction(
 
     return {
       error: null,
-      success: "Approval has been recorded.",
+      success: "تم تسجيل الموافقة بنجاح.",
     };
   } catch (error) {
     return {
       error:
         error instanceof Error
           ? error.message
-          : "Could not approve this order.",
+          : "تعذّر الموافقة على هذا الطلب.",
       success: null,
     };
   }

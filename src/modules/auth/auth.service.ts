@@ -17,13 +17,13 @@ export class AuthService {
     });
 
     if (!user || user.status !== "ACTIVE" || !user.passwordHash) {
-      return { ok: false as const, message: "Invalid email or password." };
+      return { ok: false as const, message: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
     }
 
     const passwordValid = verifyPassword(parsed.password, user.passwordHash);
 
     if (!passwordValid) {
-      return { ok: false as const, message: "Invalid email or password." };
+      return { ok: false as const, message: "البريد الإلكتروني أو كلمة المرور غير صحيحة." };
     }
 
     await createSession(user.id);

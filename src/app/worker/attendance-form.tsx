@@ -5,9 +5,8 @@ import { useActionState } from "react";
 import {
   clockInAction,
   clockOutAction,
-  initialWorkerActionState,
 } from "./actions";
-
+import { initialWorkerActionState } from "./state";
 type Props = {
   mode: "in" | "out";
 };
@@ -24,7 +23,7 @@ export function AttendanceForm({ mode }: Props) {
       <textarea
         className="input-field min-h-24"
         name="note"
-        placeholder={mode === "in" ? "Optional clock-in note" : "Optional clock-out note"}
+        placeholder={mode === "in" ? "ملاحظة اختيارية عند الحضور" : "ملاحظة اختيارية عند الانصراف"}
       />
 
       {state.error && (
@@ -41,11 +40,11 @@ export function AttendanceForm({ mode }: Props) {
       <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
         {pending
           ? mode === "in"
-            ? "Clocking in..."
-            : "Clocking out..."
+            ? "جاري تسجيل الحضور..."
+            : "جاري تسجيل الانصراف..."
           : mode === "in"
-            ? "Clock in"
-            : "Clock out"}
+            ? "تسجيل الحضور"
+            : "تسجيل الانصراف"}
       </button>
     </form>
   );

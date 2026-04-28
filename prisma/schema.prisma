@@ -83,6 +83,10 @@ enum NotificationType {
   CRM_FOLLOW_UP_DUE
   ASSIGNMENT_BLOCKED
   CUSTOMER_APPROVAL_PENDING
+  TASK_MENTIONED
+  TASK_COMMENT
+  STAGE_STARTED
+  DEPOSIT_ATTESTED
 }
 
 enum ProjectStatus {
@@ -138,6 +142,35 @@ enum ProjectActivityType {
   QUEUE_STATUS_CHANGED
   TASK_APPROVED
   TASK_REJECTED
+  COST_ADDED
+  COST_DELETED
+  COMMENT_ADDED
+  ATTACHMENT_ADDED
+  ATTACHMENT_REMOVED
+  TASK_MENTION
+  STAGE_STARTED
+  STAGE_COMPLETED
+  STAGE_SKIPPED
+  STAGE_BLOCKED
+  DEPOSIT_ATTESTED
+  LOCATION_ADDED
+}
+
+enum CostCategory {
+  MATERIAL
+  LABOR
+  SERVICE
+  OVERHEAD
+  OTHER
+}
+
+
+enum StageInstanceStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+  SKIPPED
 }
 
 model Factory {
@@ -165,6 +198,12 @@ model Factory {
   projectTasks ProjectTask[]
   workQueueItems WorkQueueItem[]
   projectActivities ProjectActivity[]
+  projectCosts ProjectCost[]
+  taskAttachments TaskAttachment[]
+  taskComments TaskComment[]
+  stages ProjectStage[]
+  stageInstances ProjectStageInstance[]
+  locations Location[]
 }
 
 model User {
@@ -194,6 +233,10 @@ model User {
   approvedProjectTasks ProjectTask[] @relation("ProjectTaskApprover")
   workQueueAssignments WorkQueueItem[] @relation("WorkQueueAssignee")
   projectActivities ProjectActivity[] @relation("ProjectActivityActor")
+  createdProjectCosts ProjectCost[] @relation("ProjectCostCreatedBy")
+  uploadedTaskAttachments TaskAttachment[] @relation("TaskAttachmentUploadedBy")
+  authoredTaskComments TaskComment[] @relation("TaskCommentAuthor")
+  stageInstancesOwned ProjectStageInstance[] @relation("StageInstanceOwner")
 
   @@index([factoryId, role])
 }
@@ -390,6 +433,7 @@ model Project {
   dueDate     DateTime?
   completedAt DateTime?
   notes       String?
+  sortOrder   Int             @default(0)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   factory     Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
@@ -397,9 +441,13 @@ model Project {
   owner       User?           @relation("ProjectOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
   tasks       ProjectTask[]
   activities  ProjectActivity[]
+  costs       ProjectCost[]
+  stageInstances ProjectStageInstance[]
+  locations   Location[]
 
   @@unique([factoryId, code])
   @@index([factoryId, status, priority, dueDate])
+  @@index([factoryId, sortOrder])
   @@index([orderId])
   @@index([ownerUserId])
 }
@@ -423,12 +471,19 @@ model ProjectTask {
   sortOrder        Int                @default(0)
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt
+  stageInstanceId  String?
+  locationId       String?
   factory          Factory            @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   project          Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignedTo       User?              @relation("ProjectTaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
   approvedBy       User?              @relation("ProjectTaskApprover", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  stageInstance    ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
+  location         Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
   queueItems       WorkQueueItem[]
   activities       ProjectActivity[]
+  costs            ProjectCost[]
+  attachments      TaskAttachment[]
+  comments         TaskComment[]
 
   @@index([factoryId, projectId, status, priority])
   @@index([assignedToUserId])
@@ -459,20 +514,155 @@ model WorkQueueItem {
 }
 
 model ProjectActivity {
-  id          String              @id @default(cuid())
-  factoryId   String
-  projectId   String
-  taskId      String?
-  actorUserId String?
-  type        ProjectActivityType
-  message     String
-  createdAt   DateTime            @default(now())
-  factory     Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  task        ProjectTask?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
-  actor       User?               @relation("ProjectActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  id              String              @id @default(cuid())
+  factoryId       String
+  projectId       String
+  taskId          String?
+  actorUserId     String?
+  type            ProjectActivityType
+  message         String
+  createdAt       DateTime            @default(now())
+  stageInstanceId String?
+  factory         Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task            ProjectTask?        @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  actor           User?               @relation("ProjectActivityActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  stageInstance   ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
 
   @@index([factoryId, projectId, createdAt])
   @@index([taskId])
   @@index([actorUserId])
+  @@index([stageInstanceId])
 }
+
+model ProjectCost {
+  id           String         @id @default(cuid())
+  factoryId    String
+  projectId    String
+  taskId       String?
+  category     CostCategory   @default(OTHER)
+  amount       Decimal        @db.Decimal(12, 2)
+  currency     String         @default("SAR")
+  description  String
+  vendorName   String?
+  receiptUrl   String?
+  incurredAt   DateTime
+  createdById  String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  stageInstanceId String?
+  factory      Factory        @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  task         ProjectTask?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdBy    User?          @relation("ProjectCostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  stageInstance ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, projectId, incurredAt])
+  @@index([factoryId, category])
+  @@index([taskId])
+}
+
+
+model TaskAttachment {
+  id           String       @id @default(cuid())
+  factoryId    String
+  taskId       String
+  filename     String
+  storedName   String
+  mimeType     String
+  sizeBytes    Int
+  uploadedById String?
+  createdAt    DateTime     @default(now())
+  factory      Factory      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  task         ProjectTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedBy   User?        @relation("TaskAttachmentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, taskId, createdAt])
+}
+
+model TaskComment {
+  id         String       @id @default(cuid())
+  factoryId  String
+  taskId     String
+  authorId   String?
+  body       String
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  factory    Factory      @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  task       ProjectTask  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author     User?        @relation("TaskCommentAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, taskId, createdAt])
+}
+
+model ProjectStage {
+  id          String    @id @default(cuid())
+  factoryId   String
+  slug        String
+  name        String
+  description String?
+  ownerRole   UserRole?
+  sortOrder   Int
+  isOptional  Boolean   @default(false)
+  requiresDepositAttestation Boolean @default(false)
+  expectedDays Int?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  factory     Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  instances   ProjectStageInstance[]
+
+  @@unique([factoryId, slug])
+  @@index([factoryId, sortOrder])
+}
+
+model ProjectStageInstance {
+  id          String              @id @default(cuid())
+  factoryId   String
+  projectId   String
+  stageId     String
+  status      StageInstanceStatus @default(NOT_STARTED)
+  startedAt   DateTime?
+  completedAt DateTime?
+  ownerUserId String?
+  notes       String?
+  depositAttested   Boolean   @default(false)
+  depositAmount     Decimal?  @db.Decimal(12, 2)
+  depositReceivedAt DateTime?
+  depositMethod     String?
+  depositReceiptUrl String?
+  depositNote       String?
+  drawingsApproved  Boolean   @default(false)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  factory     Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  stage       ProjectStage        @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  owner       User?               @relation("StageInstanceOwner", fields: [ownerUserId], references: [id], onDelete: SetNull)
+  tasks       ProjectTask[]
+  costs       ProjectCost[]
+  activities  ProjectActivity[]
+
+  @@unique([projectId, stageId])
+  @@index([factoryId, projectId])
+  @@index([status])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  factoryId   String
+  projectId   String
+  name        String
+  code        String?
+  notes       String?
+  sortOrder   Int      @default(0)
+  isTemplate  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  factory     Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks       ProjectTask[]
+
+  @@index([factoryId, projectId, sortOrder])
+}
+

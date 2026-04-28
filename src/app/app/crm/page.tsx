@@ -8,6 +8,9 @@ import { InquiryService } from "@/modules/crm/inquiry.service";
 import { hasPermission } from "@/modules/auth/roles";
 import { UserService } from "@/modules/users/user.service";
 
+import { formatSAR, formatDateAr, formatNumber } from "@/lib/format";
+import { MetricCard } from "@/components/ui";
+
 import { CreateInquiryForm } from "./create-inquiry-form";
 import { UpdateInquiryStageForm } from "./update-inquiry-stage-form";
 
@@ -15,27 +18,13 @@ const inquiryService = new InquiryService();
 const userService = new UserService();
 
 function formatCurrency(value: number | null, currency: string) {
-  if (value == null) {
-    return "No budget";
-  }
-
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    maximumFractionDigits: 0,
-  }).format(value);
+  if (value == null) return "لا يوجد ميزانية";
+  return formatSAR(value, { currency, decimals: 0 });
 }
 
 function formatDate(value: string | null) {
-  if (!value) {
-    return "No follow-up";
-  }
-
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  }).format(new Date(value));
+  if (!value) return "لا يوجد متابعة";
+  return formatDateAr(value);
 }
 
 export default async function CrmPage() {
@@ -61,28 +50,25 @@ export default async function CrmPage() {
     <main className="space-y-6">
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          CRM
+          إدارة العلاقات
         </p>
         <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-          Real inquiry pipeline
+          خط أنابيب الاستفسارات الحقيقي
         </h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          Leads are now stored as real records with stage, source, follow-up date,
-          budget, and assignee. This page is powered by the database rather than
-          demo cards.
+          يُخزَّن العملاء المحتملون الآن كسجلات حقيقية بمرحلة ومصدر وتاريخ متابعة
+          وميزانية ومسند إليه. هذه الصفحة مدعومة بقاعدة البيانات بدلاً من بطاقات تجريبية.
         </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         {INQUIRY_STAGE_VALUES.map((stage) => (
-          <article key={stage} className="panel">
-            <p className="text-sm text-[var(--muted-foreground)]">
-              {INQUIRY_STAGE_LABELS[stage]}
-            </p>
-            <h2 className="mt-2 text-3xl font-semibold">
-              {inquiriesByStage[stage].length}
-            </h2>
-          </article>
+          <MetricCard
+            key={stage}
+            label={INQUIRY_STAGE_LABELS[stage]}
+            value={formatNumber(inquiriesByStage[stage].length)}
+            tone={inquiriesByStage[stage].length > 0 ? "default" : "muted"}
+          />
         ))}
       </section>
 
@@ -92,11 +78,11 @@ export default async function CrmPage() {
         ) : (
           <section className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              CRM access
+              وصول إدارة العلاقات
             </p>
-            <h2 className="mt-2 text-2xl font-semibold">View-only access</h2>
+            <h2 className="mt-2 text-2xl font-semibold">وصول للعرض فقط</h2>
             <p className="mt-4 text-sm leading-7 text-[var(--muted-foreground)]">
-              Your role can review pipeline data but cannot create or move inquiries.
+              يمكن لدورك مراجعة بيانات خط الأنابيب لكن لا يمكنه إنشاء الاستفسارات أو تحريكها.
             </p>
           </section>
         )}
@@ -110,15 +96,15 @@ export default async function CrmPage() {
                     {INQUIRY_STAGE_LABELS[stage]}
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold">
-                    {inquiriesByStage[stage].length} inquiries
+                    {inquiriesByStage[stage].length} استفسارات
                   </h2>
                 </div>
               </div>
 
               <div className="mt-5 space-y-4">
                 {inquiriesByStage[stage].length === 0 ? (
-                  <p className="text-sm text-[var(--muted-foreground)]">
-                    No inquiries in this stage.
+                  <p className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
+                    لا توجد استفسارات في هذه المرحلة.
                   </p>
                 ) : (
                   inquiriesByStage[stage].map((inquiry) => (
@@ -135,16 +121,16 @@ export default async function CrmPage() {
                           {inquiry.email ? ` · ${inquiry.email}` : ""}
                         </p>
                       </div>
-                      <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                      <span className="rounded-full bg-[var(--panel-strong)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--foreground)]">
                         {INQUIRY_SOURCE_LABELS[inquiry.source]}
                       </span>
                     </div>
 
                       <div className="mt-4 grid gap-3 text-sm text-[var(--muted-foreground)] md:grid-cols-2">
-                        <p>Interest: {inquiry.interest || "Not set"}</p>
-                        <p>Budget: {formatCurrency(inquiry.budgetAmount, session.factoryCurrency)}</p>
-                        <p>Follow-up: {formatDate(inquiry.nextFollowUpAt)}</p>
-                        <p>Assignee: {inquiry.assignedToName || "Unassigned"}</p>
+                        <p>الاهتمام: {inquiry.interest || "غير محدد"}</p>
+                        <p>الميزانية: {formatCurrency(inquiry.budgetAmount, session.factoryCurrency)}</p>
+                        <p>المتابعة: {formatDate(inquiry.nextFollowUpAt)}</p>
+                        <p>المسند إليه: {inquiry.assignedToName || "غير مسند"}</p>
                       </div>
 
                       {inquiry.notes && (

@@ -9,6 +9,8 @@ import {
   type NotificationListItem,
   type NotificationType,
 } from "@/modules/notifications/notification.schemas";
+import { MetricCard } from "@/components/ui";
+import { formatDateAr, formatNumber } from "@/lib/format";
 
 import {
   markAllNotificationsReadAction,
@@ -16,29 +18,30 @@ import {
 } from "./actions";
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  const date = formatDateAr(d);
+  const time = new Intl.DateTimeFormat("ar-SA", {
     hour: "2-digit",
     minute: "2-digit",
-  }).format(new Date(value));
+  }).format(d);
+  return `${date} · ${time}`;
 }
 
 function getTypeClasses(type: NotificationType) {
   if (type === "ORDER_OVERDUE") {
-    return "bg-red-100 text-red-700";
+    return "bg-[var(--tone-blocked-bg)] text-[var(--tone-blocked-fg)]";
   }
 
   if (type === "CRM_FOLLOW_UP_DUE") {
-    return "bg-amber-100 text-amber-700";
+    return "bg-[var(--tone-waiting-bg)] text-[var(--tone-waiting-fg)]";
   }
 
   if (type === "ASSIGNMENT_BLOCKED") {
-    return "bg-orange-100 text-orange-700";
+    return "bg-[var(--tone-waiting-bg)] text-[var(--tone-waiting-fg)]";
   }
 
-  return "bg-sky-100 text-sky-700";
+  return "bg-[var(--tone-active-bg)] text-[var(--tone-active-fg)]";
 }
 
 function NotificationCard({
@@ -61,11 +64,11 @@ function NotificationCard({
             <span
               className={
                 notification.status === "UNREAD"
-                  ? "rounded-full bg-black px-3 py-1 text-xs font-semibold text-white"
-                  : "rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-700"
+                  ? "rounded-full bg-[var(--accent)] px-3 py-1 text-xs font-semibold text-[var(--accent-foreground)]"
+                  : "rounded-full bg-[var(--panel-strong)] border border-[var(--border)] px-3 py-1 text-xs font-semibold text-[var(--muted-foreground)]"
               }
             >
-              {notification.status === "UNREAD" ? "Unread" : "Read"}
+              {notification.status === "UNREAD" ? "غير مقروء" : "مقروء"}
             </span>
           </div>
 
@@ -74,23 +77,23 @@ function NotificationCard({
             {notification.message}
           </p>
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--muted-foreground)]">
-            <span>Detected: {formatDateTime(notification.createdAt)}</span>
-            <span>Updated: {formatDateTime(notification.updatedAt)}</span>
-            {notification.readAt && <span>Read: {formatDateTime(notification.readAt)}</span>}
+            <span>رُصد في: {formatDateTime(notification.createdAt)}</span>
+            <span>حُدّث في: {formatDateTime(notification.updatedAt)}</span>
+            {notification.readAt && <span>قُرئ في: {formatDateTime(notification.readAt)}</span>}
           </div>
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-3">
           {notification.href && (
             <Link className="button-secondary" href={notification.href}>
-              Open record
+              فتح السجل
             </Link>
           )}
           {showReadAction && (
             <form action={markNotificationReadAction}>
               <input name="notificationId" type="hidden" value={notification.id} />
               <button className="button-primary" type="submit">
-                Mark read
+                تعيين كمقروء
               </button>
             </form>
           )}
@@ -114,16 +117,15 @@ export default async function NotificationsPage() {
         <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
           <div className="max-w-3xl">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Notifications
+              الإشعارات
             </p>
             <h1 className="mt-3 text-4xl font-semibold tracking-tight">
-              Live operations alert queue
+              قائمة تنبيهات العمليات المباشرة
             </h1>
             <p className="mt-4 text-base leading-8 text-[var(--muted-foreground)]">
-              Alerts here are generated from the real database for your signed-in
-              account. Read state is user-specific, while the alert content stays
-              tied to actual overdue work, follow-ups, blocked production, and
-              pending customer approvals.
+              تُنشأ التنبيهات هنا من قاعدة البيانات الحقيقية للحساب المسجل دخوله.
+              حالة القراءة خاصة بالمستخدم، بينما يرتبط محتوى التنبيه بالعمل المتأخر
+              الفعلي والمتابعات والإنتاج المعطل وموافقات العملاء المعلّقة.
             </p>
           </div>
 
@@ -133,57 +135,59 @@ export default async function NotificationsPage() {
               disabled={feed.summary.unread === 0}
               type="submit"
             >
-              Mark all unread as read
+              تعيين الكل كمقروء
             </button>
           </form>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Unread</p>
-          <h2 className="mt-2 text-3xl font-semibold">{feed.summary.unread}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Acknowledged</p>
-          <h2 className="mt-2 text-3xl font-semibold">{feed.summary.read}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Overdue orders</p>
-          <h2 className="mt-2 text-3xl font-semibold">{feed.summary.overdueOrders}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Due follow-ups</p>
-          <h2 className="mt-2 text-3xl font-semibold">{feed.summary.dueFollowUps}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Blocked assignments</p>
-          <h2 className="mt-2 text-3xl font-semibold">
-            {feed.summary.blockedAssignments}
-          </h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">Pending approvals</p>
-          <h2 className="mt-2 text-3xl font-semibold">
-            {feed.summary.pendingApprovals}
-          </h2>
-        </article>
+        <MetricCard
+          label="غير مقروء"
+          value={formatNumber(feed.summary.unread)}
+          tone={feed.summary.unread > 0 ? "accent" : "muted"}
+        />
+        <MetricCard
+          label="مُعترف به"
+          value={formatNumber(feed.summary.read)}
+          tone="muted"
+        />
+        <MetricCard
+          label="الطلبات المتأخرة"
+          value={formatNumber(feed.summary.overdueOrders)}
+          tone={feed.summary.overdueOrders > 0 ? "danger" : "muted"}
+        />
+        <MetricCard
+          label="المتابعات المستحقة"
+          value={formatNumber(feed.summary.dueFollowUps)}
+          tone={feed.summary.dueFollowUps > 0 ? "warn" : "muted"}
+        />
+        <MetricCard
+          label="المهام المعطّلة"
+          value={formatNumber(feed.summary.blockedAssignments)}
+          tone={feed.summary.blockedAssignments > 0 ? "warn" : "muted"}
+        />
+        <MetricCard
+          label="الموافقات المعلّقة"
+          value={formatNumber(feed.summary.pendingApprovals)}
+          tone={feed.summary.pendingApprovals > 0 ? "warn" : "muted"}
+        />
       </section>
 
       <section className="grid gap-6 xl:grid-cols-2">
         <div className="space-y-4">
           <div className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Unread alerts
+              التنبيهات غير المقروءة
             </p>
             <h2 className="mt-2 text-2xl font-semibold">
-              {feed.unread.length} active item{feed.unread.length === 1 ? "" : "s"}
+              {feed.unread.length} عنصر نشط
             </h2>
           </div>
 
           {feed.unread.length === 0 ? (
             <article className="panel text-sm text-[var(--muted-foreground)]">
-              No unread notifications are active for your account right now.
+              لا توجد إشعارات غير مقروءة نشطة لحسابك الآن.
             </article>
           ) : (
             feed.unread.map((notification) => (
@@ -199,17 +203,16 @@ export default async function NotificationsPage() {
         <div className="space-y-4">
           <div className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Acknowledged
+              مُعترف به
             </p>
             <h2 className="mt-2 text-2xl font-semibold">
-              {feed.read.length} item{feed.read.length === 1 ? "" : "s"} already
-              reviewed
+              {feed.read.length} عنصر تمت مراجعته
             </h2>
           </div>
 
           {feed.read.length === 0 ? (
             <article className="panel text-sm text-[var(--muted-foreground)]">
-              Nothing has been marked as read yet.
+              لم يُعيَّن أي شيء كمقروء بعد.
             </article>
           ) : (
             feed.read.map((notification) => (

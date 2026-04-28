@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
 import {
   AssignmentStatus,
@@ -27,7 +28,21 @@ type NotificationServiceClass =
 type ProjectServiceClass =
   typeof import("@/modules/projects/project.service").ProjectService;
 
-describe.sequential("database-backed service integration", () => {
+function isIntegrationDbAvailable(): boolean {
+  if (!process.env.DATABASE_URL) return false;
+  try {
+    execFileSync("psql", ["--version"], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const describeIntegration = isIntegrationDbAvailable()
+  ? describe.sequential
+  : describe.sequential.skip;
+
+describeIntegration("database-backed service integration", () => {
   let prisma: PrismaClient;
   let databaseUrl: string;
   let cleanup: () => Promise<void>;

@@ -39,153 +39,155 @@ function inquiryStageLabel(stage: InquiryStage) {
 }
 
 export function buildReportingCsv(snapshot: ReportingSnapshot) {
-  const headers = [
-    "section",
-    "label",
-    "value",
-    "date",
-    "month",
-    "status",
-    "stage",
-    "customer_name",
-    "worker_name",
-    "phone",
-    "assigned_to",
-    "orders_created",
-    "orders_delivered",
-    "customers_added",
-    "inquiries_created",
-    "quoted_revenue",
-    "delivered_revenue",
-    "completed_assignments",
-    "in_progress_assignments",
-    "planned_assignments",
-    "days_late",
-  ];
+  const H = {
+    section: "القسم",
+    label: "التسمية",
+    value: "القيمة",
+    date: "التاريخ",
+    month: "الشهر",
+    status: "الحالة",
+    stage: "المرحلة",
+    customer_name: "اسم العميل",
+    worker_name: "اسم العامل",
+    phone: "الهاتف",
+    assigned_to: "المسؤول",
+    orders_created: "الطلبات المنشأة",
+    orders_delivered: "الطلبات المسلمة",
+    customers_added: "العملاء المضافون",
+    inquiries_created: "الاستفسارات المنشأة",
+    quoted_revenue: "الإيرادات المسعرة",
+    delivered_revenue: "الإيرادات المسلمة",
+    completed_assignments: "المهام المكتملة",
+    in_progress_assignments: "المهام قيد التنفيذ",
+    planned_assignments: "المهام المخططة",
+    days_late: "أيام التأخير",
+  };
+
+  const headers = Object.values(H);
   const rows: Array<Record<string, string | number | null>> = [];
 
   rows.push(
-    { section: "filters", label: "from", value: snapshot.range.from },
-    { section: "filters", label: "to", value: snapshot.range.to },
+    { [H.section]: "الفلاتر", [H.label]: "من", [H.value]: snapshot.range.from },
+    { [H.section]: "الفلاتر", [H.label]: "إلى", [H.value]: snapshot.range.to },
     {
-      section: "filters",
-      label: "order statuses",
-      value:
+      [H.section]: "الفلاتر",
+      [H.label]: "حالات الطلبات",
+      [H.value]:
         snapshot.filters.orderStatuses.length === 0
-          ? "All"
+          ? "الكل"
           : snapshot.filters.orderStatuses.map(orderStatusLabel).join(" | "),
     },
     {
-      section: "filters",
-      label: "inquiry stages",
-      value:
+      [H.section]: "الفلاتر",
+      [H.label]: "مراحل الاستفسارات",
+      [H.value]:
         snapshot.filters.inquiryStages.length === 0
-          ? "All"
+          ? "الكل"
           : snapshot.filters.inquiryStages.map(inquiryStageLabel).join(" | "),
     }
   );
 
   rows.push(
-    { section: "summary", label: "orders created", value: snapshot.summary.ordersCreated },
-    { section: "summary", label: "orders approved", value: snapshot.summary.ordersApproved },
-    { section: "summary", label: "orders delivered", value: snapshot.summary.ordersDelivered },
-    { section: "summary", label: "new customers", value: snapshot.summary.newCustomers },
-    { section: "summary", label: "new inquiries", value: snapshot.summary.newInquiries },
-    { section: "summary", label: "quoted revenue", value: snapshot.summary.quotedRevenue },
+    { [H.section]: "الملخص", [H.label]: "الطلبات المنشأة", [H.value]: snapshot.summary.ordersCreated },
+    { [H.section]: "الملخص", [H.label]: "الطلبات المعتمدة", [H.value]: snapshot.summary.ordersApproved },
+    { [H.section]: "الملخص", [H.label]: "الطلبات المسلمة", [H.value]: snapshot.summary.ordersDelivered },
+    { [H.section]: "الملخص", [H.label]: "العملاء الجدد", [H.value]: snapshot.summary.newCustomers },
+    { [H.section]: "الملخص", [H.label]: "الاستفسارات الجديدة", [H.value]: snapshot.summary.newInquiries },
+    { [H.section]: "الملخص", [H.label]: "الإيرادات المسعرة", [H.value]: snapshot.summary.quotedRevenue },
     {
-      section: "summary",
-      label: "delivered revenue",
-      value: snapshot.summary.deliveredRevenue,
+      [H.section]: "الملخص",
+      [H.label]: "الإيرادات المسلمة",
+      [H.value]: snapshot.summary.deliveredRevenue,
     },
     {
-      section: "summary",
-      label: "completed assignments",
-      value: snapshot.summary.completedAssignments,
+      [H.section]: "الملخص",
+      [H.label]: "المهام المكتملة",
+      [H.value]: snapshot.summary.completedAssignments,
     },
-    { section: "summary", label: "overdue orders", value: snapshot.summary.overdueOrders },
-    { section: "summary", label: "due follow-ups", value: snapshot.summary.dueFollowUps }
+    { [H.section]: "الملخص", [H.label]: "الطلبات المتأخرة", [H.value]: snapshot.summary.overdueOrders },
+    { [H.section]: "الملخص", [H.label]: "المتابعات المستحقة", [H.value]: snapshot.summary.dueFollowUps }
   );
 
   for (const entry of snapshot.currentPipeline.orderStatuses) {
     rows.push({
-      section: "order_pipeline",
-      status: orderStatusLabel(entry.status),
-      value: entry.count,
+      [H.section]: "خط_أنابيب_الطلبات",
+      [H.status]: orderStatusLabel(entry.status),
+      [H.value]: entry.count,
     });
   }
 
   for (const entry of snapshot.currentPipeline.inquiryStages) {
     rows.push({
-      section: "crm_pipeline",
-      stage: inquiryStageLabel(entry.stage),
-      value: entry.count,
+      [H.section]: "خط_أنابيب_الاستفسارات",
+      [H.stage]: inquiryStageLabel(entry.stage),
+      [H.value]: entry.count,
     });
   }
 
   for (const entry of snapshot.activitySeries) {
     rows.push({
-      section: "daily_activity",
-      date: entry.date,
-      orders_created: entry.ordersCreated,
-      orders_delivered: entry.ordersDelivered,
-      customers_added: entry.customersAdded,
-      inquiries_created: entry.inquiriesCreated,
+      [H.section]: "النشاط_اليومي",
+      [H.date]: entry.date,
+      [H.orders_created]: entry.ordersCreated,
+      [H.orders_delivered]: entry.ordersDelivered,
+      [H.customers_added]: entry.customersAdded,
+      [H.inquiries_created]: entry.inquiriesCreated,
     });
   }
 
   for (const entry of snapshot.monthlySeries) {
     rows.push({
-      section: "monthly_trends",
-      month: entry.month,
-      orders_created: entry.ordersCreated,
-      orders_delivered: entry.ordersDelivered,
-      customers_added: entry.customersAdded,
-      inquiries_created: entry.inquiriesCreated,
-      quoted_revenue: entry.quotedRevenue,
-      delivered_revenue: entry.deliveredRevenue,
+      [H.section]: "الاتجاهات_الشهرية",
+      [H.month]: entry.month,
+      [H.orders_created]: entry.ordersCreated,
+      [H.orders_delivered]: entry.ordersDelivered,
+      [H.customers_added]: entry.customersAdded,
+      [H.inquiries_created]: entry.inquiriesCreated,
+      [H.quoted_revenue]: entry.quotedRevenue,
+      [H.delivered_revenue]: entry.deliveredRevenue,
     });
   }
 
   for (const customer of snapshot.topCustomers) {
     rows.push({
-      section: "top_customers",
-      customer_name: customer.customerName,
-      value: customer.orderCount,
-      quoted_revenue: customer.quotedRevenue,
-      delivered_revenue: customer.deliveredRevenue,
+      [H.section]: "أفضل_العملاء",
+      [H.customer_name]: customer.customerName,
+      [H.value]: customer.orderCount,
+      [H.quoted_revenue]: customer.quotedRevenue,
+      [H.delivered_revenue]: customer.deliveredRevenue,
     });
   }
 
   for (const worker of snapshot.workerOutput) {
     rows.push({
-      section: "worker_output",
-      worker_name: worker.workerName,
-      completed_assignments: worker.completedAssignments,
-      in_progress_assignments: worker.inProgressAssignments,
-      planned_assignments: worker.plannedAssignments,
+      [H.section]: "إنتاجية_العمال",
+      [H.worker_name]: worker.workerName,
+      [H.completed_assignments]: worker.completedAssignments,
+      [H.in_progress_assignments]: worker.inProgressAssignments,
+      [H.planned_assignments]: worker.plannedAssignments,
     });
   }
 
   for (const order of snapshot.overdueOrderList) {
     rows.push({
-      section: "overdue_orders",
-      label: order.code,
-      value: order.title,
-      customer_name: order.customerName,
-      status: orderStatusLabel(order.status),
-      date: order.targetDate,
-      days_late: order.daysLate,
+      [H.section]: "الطلبات_المتأخرة",
+      [H.label]: order.code,
+      [H.value]: order.title,
+      [H.customer_name]: order.customerName,
+      [H.status]: orderStatusLabel(order.status),
+      [H.date]: order.targetDate,
+      [H.days_late]: order.daysLate,
     });
   }
 
   for (const inquiry of snapshot.followUpList) {
     rows.push({
-      section: "follow_up_queue",
-      value: inquiry.name,
-      stage: inquiryStageLabel(inquiry.stage),
-      date: inquiry.nextFollowUpAt,
-      phone: inquiry.phone,
-      assigned_to: inquiry.assignedToName,
+      [H.section]: "قائمة_المتابعات",
+      [H.value]: inquiry.name,
+      [H.stage]: inquiryStageLabel(inquiry.stage),
+      [H.date]: inquiry.nextFollowUpAt,
+      [H.phone]: inquiry.phone,
+      [H.assigned_to]: inquiry.assignedToName,
     });
   }
 

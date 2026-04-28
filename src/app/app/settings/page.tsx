@@ -6,7 +6,7 @@ import { SettingsForm } from "./settings-form";
 const settingsService = new SettingsService();
 
 function formatDate(value: string) {
-  return new Intl.DateTimeFormat("en-GB", {
+  return new Intl.DateTimeFormat("ar-SA", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -21,12 +21,11 @@ export default async function SettingsPage() {
     <main className="space-y-6">
       <section className="panel">
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          Settings
+          الإعدادات
         </p>
-        <h1 className="mt-3 text-3xl font-semibold">Factory configuration</h1>
+        <h1 className="mt-3 text-3xl font-semibold">إعدادات المصنع</h1>
         <p className="mt-4 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          Manage the factory identity, order numbering, currency, and customer
-          portal branding from one place.
+          أدر هوية المصنع وترقيم الطلبات والعملة وعلامة بوابة العملاء التجارية من مكان واحد.
         </p>
       </section>
 
@@ -36,23 +35,23 @@ export default async function SettingsPage() {
         <div className="space-y-6">
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Current workspace
+              مساحة العمل الحالية
             </p>
             <div className="mt-5 space-y-3 text-sm">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">Factory:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">المصنع:</span>{" "}
                 {settings.name}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">Slug:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">الرمز المختصر:</span>{" "}
                 {settings.slug}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">Created:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">تاريخ الإنشاء:</span>{" "}
                 {formatDate(settings.createdAt)}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">Last updated:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">آخر تحديث:</span>{" "}
                 {formatDate(settings.updatedAt)}
               </div>
             </div>
@@ -60,17 +59,17 @@ export default async function SettingsPage() {
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Previews
+              معاينات
             </p>
             <div className="mt-5 grid gap-3">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-                <p className="text-sm text-[var(--muted-foreground)]">Next order code</p>
+                <p className="text-sm text-[var(--muted-foreground)]">رمز الطلب التالي</p>
                 <h2 className="mt-2 text-2xl font-semibold">
                   {settings.previews.nextOrderCode}
                 </h2>
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-                <p className="text-sm text-[var(--muted-foreground)]">Portal display</p>
+                <p className="text-sm text-[var(--muted-foreground)]">عرض البوابة</p>
                 <h2 className="mt-2 text-2xl font-semibold">
                   {settings.previews.portalDisplayNameResolved}
                 </h2>
@@ -80,15 +79,15 @@ export default async function SettingsPage() {
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-              Live footprint
+              البصمة الحية
             </p>
             <div className="mt-5 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-                <p className="text-sm text-[var(--muted-foreground)]">Orders in workspace</p>
+                <p className="text-sm text-[var(--muted-foreground)]">الطلبات في مساحة العمل</p>
                 <h2 className="mt-2 text-3xl font-semibold">{settings.stats.totalOrders}</h2>
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4">
-                <p className="text-sm text-[var(--muted-foreground)]">Active users</p>
+                <p className="text-sm text-[var(--muted-foreground)]">المستخدمون النشطون</p>
                 <h2 className="mt-2 text-3xl font-semibold">{settings.stats.activeUsers}</h2>
               </div>
             </div>

@@ -5,15 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/modules/auth/guards";
 import { InquiryService } from "@/modules/crm/inquiry.service";
 
-export type InquiryActionState = {
-  error: string | null;
-  success: string | null;
-};
-
-export const initialInquiryActionState: InquiryActionState = {
-  error: null,
-  success: null,
-};
+import type { InquiryActionState } from "./state";
 
 const inquiryService = new InquiryService();
 
@@ -47,11 +39,11 @@ export async function createInquiryAction(
 
     return {
       error: null,
-      success: "Inquiry created.",
+      success: "تم إنشاء الاستفسار بنجاح.",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not create inquiry.",
+      error: error instanceof Error ? error.message : "تعذّر إنشاء الاستفسار.",
       success: null,
     };
   }
@@ -75,11 +67,11 @@ export async function updateInquiryStageAction(
 
     return {
       error: null,
-      success: "Inquiry updated.",
+      success: "تم تحديث الاستفسار بنجاح.",
     };
   } catch (error) {
     return {
-      error: error instanceof Error ? error.message : "Could not update inquiry.",
+      error: error instanceof Error ? error.message : "تعذّر تحديث الاستفسار.",
       success: null,
     };
   }

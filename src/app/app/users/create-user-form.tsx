@@ -5,11 +5,8 @@ import { useActionState } from "react";
 import type { InternalUserRole } from "@/modules/users/user-access";
 import { INTERNAL_USER_ROLE_LABELS } from "@/modules/users/user-access";
 
-import {
-  createUserAction,
-  initialUserAdminActionState,
-} from "./actions";
-
+import { createUserAction } from "./actions";
+import { initialUserAdminActionState } from "./state";
 export function CreateUserForm({
   availableRoles,
 }: {
@@ -24,42 +21,42 @@ export function CreateUserForm({
     <form action={formAction} className="panel space-y-4">
       <div>
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
-          New team member
+          عضو فريق جديد
         </p>
-        <h2 className="mt-2 text-2xl font-semibold">Create user</h2>
+        <h2 className="mt-2 text-2xl font-semibold">إنشاء مستخدم</h2>
         <p className="mt-3 text-sm leading-7 text-[var(--muted-foreground)]">
-          This creates a real login with an active password immediately.
+          سيُنشئ هذا حساب دخول حقيقي بكلمة مرور نشطة فوراً.
         </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="firstName">
-            First name
+            الاسم الأول
           </label>
           <input className="input-field" id="firstName" name="firstName" required />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="lastName">
-            Last name
+            اسم العائلة
           </label>
           <input className="input-field" id="lastName" name="lastName" required />
         </div>
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium" htmlFor="email">
-            Email
+            البريد الإلكتروني
           </label>
           <input className="input-field" id="email" name="email" required type="email" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="phone">
-            Phone
+            الهاتف
           </label>
           <input className="input-field" id="phone" name="phone" />
         </div>
         <div className="space-y-2">
           <label className="text-sm font-medium" htmlFor="role">
-            Role
+            الدور
           </label>
           <select className="input-field" defaultValue={availableRoles[0]} id="role" name="role">
             {availableRoles.map((role) => (
@@ -71,7 +68,7 @@ export function CreateUserForm({
         </div>
         <div className="space-y-2 md:col-span-2">
           <label className="text-sm font-medium" htmlFor="password">
-            Temporary password
+            كلمة المرور المؤقتة
           </label>
           <input
             className="input-field"
@@ -97,7 +94,7 @@ export function CreateUserForm({
       )}
 
       <button className="button-primary disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Creating..." : "Create user"}
+        {pending ? "جاري الإنشاء..." : "إنشاء مستخدم"}
       </button>
     </form>
   );

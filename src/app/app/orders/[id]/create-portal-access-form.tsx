@@ -2,11 +2,8 @@
 
 import { useActionState } from "react";
 
-import {
-  createPortalAccessAction,
-  initialPortalAccessActionState,
-} from "./actions";
-
+import { createPortalAccessAction } from "./actions";
+import { initialPortalAccessActionState } from "./state";
 type Props = {
   orderId: string;
 };
@@ -33,7 +30,7 @@ export function CreatePortalAccessForm({ orderId }: Props) {
       )}
 
       <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Preparing link..." : "Create customer portal link"}
+        {pending ? "جاري إعداد الرابط..." : "إنشاء رابط بوابة العميل"}
       </button>
     </form>
   );

@@ -2,10 +2,8 @@
 
 import { useActionState } from "react";
 
-import {
-  initialOrderStatusActionState,
-  updateOrderStatusAction,
-} from "./actions";
+import { updateOrderStatusAction } from "./actions";
+import { initialOrderStatusActionState } from "./state";
 import {
   ORDER_STATUS_LABELS,
   type OrderWorkflowStatus,
@@ -30,7 +28,7 @@ export function UpdateOrderStatusForm({
   if (allowedStatuses.length === 0) {
     return (
       <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-4 text-sm text-[var(--muted-foreground)]">
-        No further status transitions are available from{" "}
+        لا تتوفر تحولات حالة إضافية من{" "}
         <span className="font-medium text-[var(--foreground)]">
           {ORDER_STATUS_LABELS[currentStatus]}
         </span>
@@ -45,7 +43,7 @@ export function UpdateOrderStatusForm({
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="status">
-          Next status
+          الحالة التالية
         </label>
         <select className="input-field" defaultValue={allowedStatuses[0]} id="status" name="status">
           {allowedStatuses.map((status) => (
@@ -58,7 +56,7 @@ export function UpdateOrderStatusForm({
 
       <div className="space-y-2">
         <label className="text-sm font-medium" htmlFor="note">
-          Change note
+          ملاحظة التغيير
         </label>
         <textarea className="input-field min-h-28" id="note" name="note" />
       </div>
@@ -75,7 +73,7 @@ export function UpdateOrderStatusForm({
       )}
 
       <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
-        {pending ? "Updating..." : "Update status"}
+        {pending ? "جاري التحديث..." : "تحديث الحالة"}
       </button>
     </form>
   );
