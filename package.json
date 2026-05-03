@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "APP_URL=http://localhost:2500 next dev --port 2500",
-    "build": "next build",
+    "build": "prisma generate && next build",
+    "postinstall": "prisma generate",
     "start": "APP_URL=http://localhost:2500 next start -p 2500",
     "lint": "eslint .",
     "test": "vitest run",
