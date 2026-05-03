@@ -82,7 +82,7 @@ export default async function OrdersArchitecturePage() {
                   </thead>
                   <tbody>
                     {orders.map((order) => (
-                      <tr key={order.id} className="border-b border-[var(--border)] last:border-b-0">
+                      <tr key={order.id} className="border-b border-[var(--border)] last:border-b-0 transition-colors hover:bg-[var(--panel-strong)] cursor-pointer">
                         <td className="py-4 pe-4 font-medium">{order.code}</td>
                         <td className="px-4 py-4">
                           <Link className="font-medium hover:underline" href={`/app/orders/${order.id}`}>

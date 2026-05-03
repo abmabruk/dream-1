@@ -98,7 +98,7 @@ export default async function AppHomePage() {
         <MetricCard
           label="المسلّمة"
           value={formatNumber(snapshot.stats.deliveredOrders)}
-          tone="accent"
+          tone={snapshot.stats.deliveredOrders > 0 ? "accent" : "default"}
           sublabel="مكتملة"
         />
         <MetricCard

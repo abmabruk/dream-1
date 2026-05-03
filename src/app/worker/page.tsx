@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { signOutAction } from "@/app/sign-in/actions";
 import { requirePermission } from "@/modules/auth/guards";
 import { AttendanceService } from "@/modules/attendance/attendance.service";
 import {
@@ -50,9 +51,16 @@ export default async function WorkerEntryPage() {
               هذه المساحة مدعومة الآن بسجلات حضور حقيقية ومهام حقيقية مرتبطة بالمستخدم المسجل دخوله.
             </p>
           </div>
-          <Link className="button-secondary" href="/app">
-            العودة إلى لوحة التحكم
-          </Link>
+          <div className="flex items-center gap-3">
+            <Link className="button-secondary" href="/app">
+              العودة إلى لوحة التحكم
+            </Link>
+            <form action={signOutAction}>
+              <button type="submit" className="button-secondary">
+                تسجيل الخروج
+              </button>
+            </form>
+          </div>
         </div>
       </section>
 

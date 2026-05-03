@@ -1097,12 +1097,13 @@ export function ProjectHub({
                                       <button
                                         type="button"
                                         className="text-xs text-[var(--accent)] hover:underline"
-                                        onClick={() =>
+                                        onClick={(e) => {
+                                          e.stopPropagation();
                                           handleAddToToday(
                                             task.id,
                                             task.assignedToUserId
-                                          )
-                                        }
+                                          );
+                                        }}
                                       >
                                         + إضافة إلى اليوم
                                       </button>
@@ -1207,6 +1208,7 @@ export function ProjectHub({
                 defaultStageInstanceId={
                   project.currentStageInstance?.id ?? null
                 }
+                locations={project.locations.map((l) => ({ id: l.id, name: l.name, code: l.code }))}
               />
             </TabsContent>
           ) : null}

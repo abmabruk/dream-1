@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { WorkQueueStatus } from "@prisma/client";
 
+import { HttpError } from "@/lib/http/http-error";
 import { ProjectService } from "./project.service";
 import { WORK_QUEUE_STATUS_TRANSITIONS } from "./project-status";
 
@@ -33,15 +34,13 @@ describe("WORK_QUEUE_STATUS_TRANSITIONS (state machine map)", () => {
 // project.service.ts, using mocked repositories and db.
 // ---------------------------------------------------------------------------
 
-const { mockUpdateQueueItem, mockGetOpsBoard } = vi.hoisted(() => ({
+const { mockUpdateQueueItem } = vi.hoisted(() => ({
   mockUpdateQueueItem: vi.fn(),
-  mockGetOpsBoard: vi.fn(),
 }));
 
 vi.mock("./project.repository", () => ({
   ProjectRepository: class {
     updateQueueItem = mockUpdateQueueItem;
-    getOpsBoard = mockGetOpsBoard;
   },
 }));
 
@@ -76,44 +75,16 @@ describe("ProjectService.updateQueueItem — delegates to repository", () => {
     expect(result).toMatchObject({ id: "qi-1" });
   });
 
-  it("rejects DONE when the task still requires approval", async () => {
-    mockGetOpsBoard.mockResolvedValue({
-      queue: [
-        {
-          id: "qi-2",
-          task: { requiresApproval: true },
-        },
-      ],
-    });
+  it("propagates repository approval errors", async () => {
+    mockUpdateQueueItem.mockRejectedValue(
+      new HttpError(409, "This task requires approval before it can be marked done.")
+    );
 
     await expect(
       service.updateQueueItem("factory-1", "worker-1", {
         queueItemId: "qi-2",
         status: "DONE",
       })
-    ).rejects.toMatchObject({
-      status: 409,
-      message: "This task requires approval before it can be marked done.",
-    });
-    expect(mockUpdateQueueItem).not.toHaveBeenCalled();
-  });
-
-  it("propagates DONE result when repository succeeds", async () => {
-    mockGetOpsBoard.mockResolvedValue({
-      queue: [
-        {
-          id: "qi-3",
-          task: { requiresApproval: false },
-        },
-      ],
-    });
-    mockUpdateQueueItem.mockResolvedValue({ id: "qi-3", status: WorkQueueStatus.DONE });
-
-    await service.updateQueueItem("factory-1", "worker-1", {
-      queueItemId: "qi-3",
-      status: "DONE",
-    });
-
-    expect(mockUpdateQueueItem).toHaveBeenCalled();
+    ).rejects.toMatchObject({ status: 409 });
   });
 });

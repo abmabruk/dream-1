@@ -1,0 +1,2 @@
+-- This migration was superseded by a later migration after Location was introduced.
+-- Kept as a no-op so historical ordering remains valid for Prisma migrate deploy.

@@ -35,6 +35,7 @@ type ProjectCostRow = {
   createdAt: Date;
   updatedAt: Date;
   stageInstanceId: string | null;
+  locationId: string | null;
 };
 
 type ProjectCostWithCreator = ProjectCostRow & {
@@ -42,6 +43,10 @@ type ProjectCostWithCreator = ProjectCostRow & {
   stageInstance?: {
     id: string;
     stage: { name: string } | null;
+  } | null;
+  location?: {
+    id: string;
+    name: string;
   } | null;
 };
 
@@ -51,6 +56,7 @@ interface ProjectCostDelegate {
     include?: {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
+      location?: boolean;
     };
   }): Promise<ProjectCostWithCreator>;
   findFirst(args: {
@@ -61,6 +67,7 @@ interface ProjectCostDelegate {
     include?: {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
+      location?: boolean;
     };
     select?: Record<string, boolean>;
     orderBy?: Record<string, "asc" | "desc"> | { incurredAt?: "asc" | "desc"; createdAt?: "asc" | "desc" }[];
@@ -117,6 +124,8 @@ function mapCost(c: ProjectCostWithCreator): CostListItem {
     createdAt: c.createdAt.toISOString(),
     stageInstanceId: c.stageInstanceId ?? null,
     stageName: c.stageInstance?.stage?.name ?? null,
+    locationId: c.locationId ?? null,
+    locationName: c.location?.name ?? null,
   };
 }
 
@@ -161,10 +170,12 @@ export class CostRepository {
           incurredAt: new Date(input.incurredAt),
           createdById: actorUserId,
           stageInstanceId: input.stageInstanceId ?? null,
+          locationId: input.locationId ?? null,
         } as never,
         include: {
           createdBy: true,
           stageInstance: { include: { stage: true } },
+          location: true,
         },
       });
 
@@ -236,6 +247,7 @@ export class CostRepository {
       include: {
         createdBy: true,
         stageInstance: { include: { stage: true } },
+        location: true,
       },
       orderBy: [{ incurredAt: "desc" }, { createdAt: "desc" }],
     });

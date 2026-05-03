@@ -35,6 +35,7 @@ interface FinancePanelProps {
   tasks: { id: string; title: string }[];
   stageInstances?: StageInstanceItem[];
   defaultStageInstanceId?: string | null;
+  locations?: { id: string; name: string; code: string | null }[];
 }
 
 // Stage palette — uses accent variations so charts stay on-brand without
@@ -69,6 +70,7 @@ export function FinancePanel({
   tasks,
   stageInstances = [],
   defaultStageInstanceId = null,
+  locations = [],
 }: FinancePanelProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -469,6 +471,7 @@ export function FinancePanel({
           tasks={tasks}
           stageInstances={stageInstances}
           defaultStageInstanceId={defaultStageInstanceId}
+          locations={locations}
           onClose={() => setShowAdd(false)}
           onCreated={async () => {
             setShowAdd(false);

@@ -21,7 +21,7 @@ export default async function AppLayout({
 
   return (
     <ToastProvider>
-    <div className="flex flex-1">
+    <div className="flex flex-col md:flex-row flex-1">
       <CollapsibleSidebar
         unreadNotifications={notifications?.summary.unread ?? 0}
         canViewNotifications={hasPermission(session.role, "notifications:view")}

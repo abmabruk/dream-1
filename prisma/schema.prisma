@@ -551,15 +551,18 @@ model ProjectCost {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   stageInstanceId String?
+  locationId   String?
   factory      Factory        @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   task         ProjectTask?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
   createdBy    User?          @relation("ProjectCostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   stageInstance ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
+  location     Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
 
   @@index([factoryId, projectId, incurredAt])
   @@index([factoryId, category])
   @@index([taskId])
+  @@index([locationId])
 }
 
 
@@ -657,11 +660,13 @@ model Location {
   notes       String?
   sortOrder   Int      @default(0)
   isTemplate  Boolean  @default(false)
+  quotedAmount Decimal? @db.Decimal(12, 2)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   factory     Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   project     Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks       ProjectTask[]
+  costs       ProjectCost[]
 
   @@index([factoryId, projectId, sortOrder])
 }

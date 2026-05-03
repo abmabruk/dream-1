@@ -38,19 +38,19 @@ export default async function SettingsPage() {
               مساحة العمل الحالية
             </p>
             <div className="mt-5 space-y-3 text-sm">
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+              <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 select-all cursor-text">
                 <span className="text-[var(--muted-foreground)]">المصنع:</span>{" "}
                 {settings.name}
               </div>
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+              <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 select-all cursor-text">
                 <span className="text-[var(--muted-foreground)]">الرمز المختصر:</span>{" "}
                 {settings.slug}
               </div>
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+              <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 select-all cursor-text">
                 <span className="text-[var(--muted-foreground)]">تاريخ الإنشاء:</span>{" "}
                 {formatDate(settings.createdAt)}
               </div>
-              <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
+              <div className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3 select-all cursor-text">
                 <span className="text-[var(--muted-foreground)]">آخر تحديث:</span>{" "}
                 {formatDate(settings.updatedAt)}
               </div>

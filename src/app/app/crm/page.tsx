@@ -103,9 +103,13 @@ export default async function CrmPage() {
 
               <div className="mt-5 space-y-4">
                 {inquiriesByStage[stage].length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-6 text-center text-sm text-[var(--muted-foreground)]">
-                    لا توجد استفسارات في هذه المرحلة.
-                  </p>
+                  <div className="rounded-2xl border border-dashed border-[var(--border)] px-4 py-8 text-center text-[var(--muted-foreground)]">
+                    <svg className="mx-auto mb-3 opacity-40" width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden xmlns="http://www.w3.org/2000/svg">
+                      <rect x="4" y="6" width="24" height="20" rx="4" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M10 12h12M10 17h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                    </svg>
+                    <p className="text-sm font-medium">لا توجد استفسارات في هذه المرحلة.</p>
+                  </div>
                 ) : (
                   inquiriesByStage[stage].map((inquiry) => (
                     <div

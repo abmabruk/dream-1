@@ -139,6 +139,7 @@ export const createLocationInputSchema = z.object({
   notes: z.string().max(2000).optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
+  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
 });
 
 export const updateLocationInputSchema = z.object({
@@ -148,6 +149,7 @@ export const updateLocationInputSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
+  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
 });
 
 export const updateLocationOnTaskSchema = z.object({
@@ -168,6 +170,7 @@ export const createLocationBodySchema = z.object({
   code: z.string().max(40).optional(),
   notes: z.string().max(2000).optional(),
   isTemplate: z.boolean().optional(),
+  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
 });
 
 export const updateLocationBodySchema = z.object({
@@ -176,6 +179,7 @@ export const updateLocationBodySchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
+  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
 });
 
 export type AdvanceStageInput = z.infer<typeof advanceStageInputSchema>;
@@ -284,6 +288,9 @@ export type LocationItem = {
   sortOrder: number;
   isTemplate: boolean;
   taskCount: number;
+  quotedAmount: number | null;
+  totalCost: number;
+  profitLoss: number | null;
 };
 
 export type ProjectDetail = {

@@ -33,6 +33,7 @@ interface AddCostDialogProps {
   tasks: { id: string; title: string }[];
   stageInstances?: StageInstanceItem[];
   defaultStageInstanceId?: string | null;
+  locations?: { id: string; name: string; code: string | null }[];
   onClose: () => void;
   onCreated: () => void | Promise<void>;
 }
@@ -47,6 +48,7 @@ export function AddCostDialog({
   tasks,
   stageInstances = [],
   defaultStageInstanceId = null,
+  locations = [],
   onClose,
   onCreated,
 }: AddCostDialogProps) {
@@ -59,6 +61,7 @@ export function AddCostDialog({
   const [stageInstanceId, setStageInstanceId] = useState<string>(
     defaultStageInstanceId ?? "",
   );
+  const [locationId, setLocationId] = useState<string>("");
   const [incurredAt, setIncurredAt] = useState<string>(todayDate());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,6 +105,7 @@ export function AddCostDialog({
           vendorName: vendor.trim() || undefined,
           taskId: taskId || undefined,
           stageInstanceId: stageInstanceId || undefined,
+          locationId: locationId || undefined,
           incurredAt: new Date(incurredAt).toISOString(),
         }),
       });
@@ -220,6 +224,25 @@ export function AddCostDialog({
                   {s.name} · {STAGE_STATUS_LABELS_AR[s.status] ?? s.status}
                 </option>
               ))}
+          </select>
+        </label>
+      ) : null}
+
+      {locations && locations.length > 0 ? (
+        <label className="block text-sm">
+          الموقع (اختياري)
+          <select
+            value={locationId}
+            onChange={(e) => setLocationId(e.target.value)}
+            className="mt-1 w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <option value="">— بدون موقع —</option>
+            {locations.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}{l.code ? ` · ${l.code}` : ""}
+              </option>
+            ))}
           </select>
         </label>
       ) : null}

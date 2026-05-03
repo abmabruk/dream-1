@@ -406,7 +406,7 @@ export default async function ReportsPage({ searchParams }: ReportsPageProps) {
         </p>
         <h2 className="mt-2 text-2xl font-semibold">الحركة يوماً بيوم</h2>
         <div className="mt-5 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+          <table className="min-w-[540px] text-left text-sm">
             <thead className="text-[var(--muted-foreground)]">
               <tr>
                 <th className="px-4 py-3 font-medium">اليوم</th>

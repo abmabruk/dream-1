@@ -44,3 +44,7 @@ node_modules
 
 # Phase 6: private file storage (task attachments)
 /private/uploads/
+
+# Local scratch / experimental folders
+/Untitled/
+/.worktrees/

@@ -43,6 +43,7 @@ export const CostInput = z.object({
   receiptUrl: z.string().max(500).optional(),
   incurredAt: z.string().min(1),
   stageInstanceId: z.string().min(1).nullable().optional(),
+  locationId: z.string().min(1).nullable().optional(),
 });
 export type CostInputType = z.infer<typeof CostInput>;
 
@@ -62,6 +63,8 @@ export type CostListItem = {
   createdAt: string;
   stageInstanceId: string | null;
   stageName: string | null;
+  locationId: string | null;
+  locationName: string | null;
 };
 
 export type CostByStageEntry = {

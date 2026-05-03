@@ -52,6 +52,7 @@ export function LocationsPanel({
   const [formCode, setFormCode] = useState("");
   const [formNotes, setFormNotes] = useState("");
   const [formIsTemplate, setFormIsTemplate] = useState(false);
+  const [formQuotedAmount, setFormQuotedAmount] = useState("");
 
   // Clone state
   const [cloneCount, setCloneCount] = useState(1);
@@ -64,6 +65,7 @@ export function LocationsPanel({
     setFormCode("");
     setFormNotes("");
     setFormIsTemplate(false);
+    setFormQuotedAmount("");
   };
 
   const startEdit = (loc: LocationItem) => {
@@ -73,6 +75,7 @@ export function LocationsPanel({
     setFormCode(loc.code ?? "");
     setFormNotes(loc.notes ?? "");
     setFormIsTemplate(loc.isTemplate);
+    setFormQuotedAmount(loc.quotedAmount != null ? String(loc.quotedAmount) : "");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -92,6 +95,7 @@ export function LocationsPanel({
             code: formCode.trim() || null,
             notes: formNotes.trim() || null,
             isTemplate: formIsTemplate,
+            quotedAmount: formQuotedAmount !== "" ? Number(formQuotedAmount) : null,
           },
         );
         toast("تم حفظ الموقع", "success");
@@ -102,6 +106,7 @@ export function LocationsPanel({
           code: formCode.trim() || undefined,
           notes: formNotes.trim() || undefined,
           isTemplate: formIsTemplate,
+          quotedAmount: formQuotedAmount !== "" ? Number(formQuotedAmount) : undefined,
         });
         toast("تمت إضافة الموقع", "success");
         setShowAdd(false);
@@ -209,6 +214,22 @@ export function LocationsPanel({
             onChange={(e) => setFormCode(e.target.value)}
             maxLength={40}
             placeholder="مثلاً: B1"
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-xs font-medium" htmlFor="loc-quoted">
+            المبلغ المسعّر (ر.س)
+          </label>
+          <input
+            id="loc-quoted"
+            type="number"
+            inputMode="decimal"
+            min="0"
+            step="0.01"
+            className="input-field"
+            value={formQuotedAmount}
+            onChange={(e) => setFormQuotedAmount(e.target.value)}
+            placeholder="0.00"
           />
         </div>
       </div>
@@ -344,6 +365,28 @@ export function LocationsPanel({
                   <p className="text-xs text-[var(--muted-foreground)] line-clamp-2">
                     {loc.notes}
                   </p>
+                ) : null}
+                {(loc.quotedAmount != null || loc.totalCost > 0) ? (
+                  <div className="flex items-center justify-between gap-2 text-xs pt-1 border-t border-[var(--border)]">
+                    {loc.quotedAmount != null ? (
+                      <span className="text-[var(--muted-foreground)]">
+                        المسعّر: {loc.quotedAmount.toLocaleString("ar-SA")} ر.س
+                      </span>
+                    ) : null}
+                    {loc.totalCost > 0 ? (
+                      <span className="text-[var(--muted-foreground)]">
+                        التكاليف: {loc.totalCost.toLocaleString("ar-SA")} ر.س
+                      </span>
+                    ) : null}
+                    {loc.profitLoss != null ? (
+                      <span
+                        className="font-semibold"
+                        style={{ color: loc.profitLoss >= 0 ? "var(--tone-done-fg)" : "var(--tone-blocked-fg)" }}
+                      >
+                        {loc.profitLoss >= 0 ? "+" : ""}{loc.profitLoss.toLocaleString("ar-SA")} ر.س
+                      </span>
+                    ) : null}
+                  </div>
                 ) : null}
                 {canManage ? (
                   <div className="flex items-center gap-1 flex-wrap pt-1">

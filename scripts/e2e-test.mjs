@@ -87,16 +87,6 @@ async function postJson(path, body) {
   }
 }
 
-async function patchJson(path, body) {
-  const res = await req("PATCH", path, body);
-  if (!res.ok) return { status: res.status, error: await res.text() };
-  try {
-    return { status: res.status, ...(await res.json()) };
-  } catch {
-    return { status: res.status };
-  }
-}
-
 async function delJson(path) {
   const res = await req("DELETE", path);
   return { status: res.status, ok: res.ok };
@@ -173,7 +163,6 @@ async function main() {
   // 3. List APIs
   // ─────────────────────────────────────────────────
   log("\n📋", "3. List APIs");
-  const customers = await getJson("/api/v1/customers");
   // customers endpoint may not exist in the API spec; check projects/orders instead
   const projects = await getJson("/api/v1/projects");
   check("GET /api/v1/projects", projects.status === 200 || projects.status === 404, `${projects.status}`);

@@ -2,7 +2,6 @@ import "server-only";
 
 import {
   UserRole,
-  WorkQueueStatus,
 } from "@prisma/client";
 
 import { HttpError } from "@/lib/http/http-error";
@@ -142,26 +141,6 @@ export class ProjectService {
 
   async updateQueueItem(factoryId: string, actorUserId: string, input: unknown) {
     const parsed = updateQueueItemSchema.parse(input);
-
-    if (parsed.status === WorkQueueStatus.WAITING_APPROVAL) {
-      return this.repository.updateQueueItem(factoryId, actorUserId, parsed);
-    }
-
-    if (parsed.status === WorkQueueStatus.DONE) {
-      const board = await this.repository.getOpsBoard(factoryId, todayBoardDate());
-      const queueItem = board.queue.find((item) => item.id === parsed.queueItemId);
-
-      if (!queueItem) {
-        throw new HttpError(404, "Queue item not found.");
-      }
-
-      if (queueItem.task.requiresApproval) {
-        throw new HttpError(
-          409,
-          "This task requires approval before it can be marked done."
-        );
-      }
-    }
 
     return this.repository.updateQueueItem(factoryId, actorUserId, parsed);
   }

@@ -8,6 +8,8 @@ import {
 } from "@prisma/client";
 
 import { db, type PrismaTransaction } from "@/lib/db";
+import { HttpError } from "@/lib/http/http-error";
+import { WORK_QUEUE_STATUS_LABELS } from "./project-status";
 import type {
   AddTaskToTodayInput,
   AttestDepositInput,
@@ -486,7 +488,7 @@ export class ProjectRepository {
         projectId: project.id,
         actorUserId,
         type: "PROJECT_CREATED",
-        message: `Project ${project.code} created.`,
+        message: `أُنشئ المشروع ${project.code}.`,
       });
 
       // Auto-instantiate stages from active templates for this factory.
@@ -588,7 +590,7 @@ export class ProjectRepository {
         stageInstanceId: input.stageInstanceId ?? null,
         actorUserId,
         type: "TASK_CREATED",
-        message: `Task "${task.title}" added to project ${project.code}.`,
+        message: `أُضيفت المهمة "${task.title}" إلى المشروع ${project.code}.`,
       });
 
       await this.refreshProjectStatus(tx, project.id);
@@ -689,7 +691,7 @@ export class ProjectRepository {
         taskId: task.id,
         actorUserId,
         type: "TASK_ADDED_TO_TODAY",
-        message: `Task "${task.title}" added to the daily queue.`,
+        message: `أُضيفت المهمة "${task.title}" إلى قائمة اليوم.`,
       });
 
       await this.refreshProjectStatus(tx, task.projectId);
@@ -729,7 +731,7 @@ export class ProjectRepository {
         projectId: firstItem.task.projectId,
         actorUserId,
         type: "QUEUE_REORDERED",
-        message: `Daily queue reordered for ${input.workDate}.`,
+        message: `أُعيد ترتيب قائمة اليوم بتاريخ ${input.workDate}.`,
       });
 
       return tx.workQueueItem.findMany({
@@ -831,7 +833,7 @@ export class ProjectRepository {
         taskId: queueItem.taskId,
         actorUserId,
         type: "QUEUE_REORDERED",
-        message: `Task "${queueItem.task.title}" moved to ${input.targetDate}.`,
+        message: `نُقلت المهمة "${queueItem.task.title}" إلى تاريخ ${input.targetDate}.`,
       });
 
       return tx.workQueueItem.findUniqueOrThrow({
@@ -897,7 +899,7 @@ export class ProjectRepository {
         taskId: queueItem.taskId,
         actorUserId,
         type: "QUEUE_REORDERED",
-        message: `Task "${queueItem.task.title}" was moved ${direction} in the daily queue.`,
+        message: `نُقلت المهمة "${queueItem.task.title}" ${direction === "up" ? "لأعلى" : "لأسفل"} في قائمة اليوم.`,
       });
 
       return tx.workQueueItem.findUniqueOrThrow({
@@ -924,6 +926,17 @@ export class ProjectRepository {
 
       if (!queueItem) {
         throw new Error("Queue item not found.");
+      }
+
+      if (
+        input.status === WorkQueueStatus.DONE &&
+        queueItem.task.requiresApproval &&
+        queueItem.task.approvalStatus !== TaskApprovalStatus.APPROVED
+      ) {
+        throw new HttpError(
+          409,
+          "This task requires approval before it can be marked done."
+        );
       }
 
       const nextTaskStatus = this.mapQueueStatusToTaskStatus(input.status);
@@ -971,7 +984,7 @@ export class ProjectRepository {
         taskId: queueItem.taskId,
         actorUserId,
         type: "QUEUE_STATUS_CHANGED",
-        message: `Task "${queueItem.task.title}" moved to ${input.status.toLowerCase().replaceAll("_", " ")}.`,
+        message: `نُقلت المهمة "${queueItem.task.title}" إلى: ${WORK_QUEUE_STATUS_LABELS[input.status as keyof typeof WORK_QUEUE_STATUS_LABELS] ?? input.status}.`,
       });
 
       await this.refreshProjectStatus(tx, queueItem.task.projectId);
@@ -2024,6 +2037,7 @@ export class ProjectRepository {
           notes: string | null;
           sortOrder: number;
           isTemplate: boolean;
+          quotedAmount: { toString(): string } | null;
         }>>;
       };
     };
@@ -2043,6 +2057,10 @@ export class ProjectRepository {
     for (const c of counts) {
       if (c.locationId) countMap.set(c.locationId, c._count._all);
     }
+    const costRows = await (db as never as { $queryRaw: (sql: TemplateStringsArray, ...args: string[]) => Promise<Array<{ locationId: string; total: string }>> }).$queryRaw`
+  SELECT "locationId", SUM(amount)::text as total FROM "ProjectCost" WHERE "factoryId" = ${factoryId} AND "projectId" = ${projectId} AND "locationId" IS NOT NULL GROUP BY "locationId"`;
+    const costMap = new Map<string, number>();
+    for (const c of costRows) costMap.set(c.locationId, Number(c.total));
     return rows.map((row) => ({
       id: row.id,
       name: row.name,
@@ -2051,6 +2069,9 @@ export class ProjectRepository {
       sortOrder: row.sortOrder,
       isTemplate: row.isTemplate,
       taskCount: countMap.get(row.id) ?? 0,
+      quotedAmount: row.quotedAmount ? Number(row.quotedAmount.toString()) : null,
+      totalCost: costMap.get(row.id) ?? 0,
+      profitLoss: row.quotedAmount ? Number(row.quotedAmount.toString()) - (costMap.get(row.id) ?? 0) : null,
     }));
   }
 
@@ -2081,6 +2102,9 @@ export class ProjectRepository {
           notes: input.notes ?? null,
           sortOrder: input.sortOrder ?? (max._max.sortOrder ?? -1) + 1,
           isTemplate: input.isTemplate ?? false,
+          ...(input.quotedAmount !== undefined && input.quotedAmount !== null
+            ? { quotedAmount: input.quotedAmount }
+            : {}),
         },
       });
 
@@ -2188,6 +2212,7 @@ export class ProjectRepository {
     if (input.notes !== undefined) data.notes = input.notes;
     if (input.sortOrder !== undefined) data.sortOrder = input.sortOrder;
     if (input.isTemplate !== undefined) data.isTemplate = input.isTemplate;
+    if (input.quotedAmount !== undefined) data.quotedAmount = input.quotedAmount;
     const updated = await dbAny.location.update({
       where: { id: input.locationId },
       data,
