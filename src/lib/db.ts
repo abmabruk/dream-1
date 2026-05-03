@@ -19,17 +19,22 @@ function getDatabaseUrl() {
   return databaseUrl;
 }
 
-const adapter = new PrismaPg({
-  connectionString: getDatabaseUrl(),
-});
+function createPrismaClient() {
+  const adapter = new PrismaPg({
+    connectionString: getDatabaseUrl(),
+  });
 
-export const db =
-  global.__dreamPrisma ??
-  new PrismaClient({
+  return new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === "development" ? ["warn", "error"] : ["error"],
   });
-
-if (process.env.NODE_ENV !== "production") {
-  global.__dreamPrisma = db;
 }
+
+export const db: PrismaClient = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    if (!global.__dreamPrisma) {
+      global.__dreamPrisma = createPrismaClient();
+    }
+    return Reflect.get(global.__dreamPrisma, prop, global.__dreamPrisma);
+  },
+});
