@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { ZodError } from "zod";
 
 import { formatZodErrorAr } from "@/lib/zod-helpers";
@@ -86,6 +87,7 @@ export async function convertInquiryAction(
   _previousState: InquiryActionState,
   formData: FormData,
 ): Promise<InquiryActionState> {
+  let newOrderId: string | null = null;
   try {
     const session = await requirePermission("crm:manage");
     const inquiryId = String(formData.get("inquiryId") ?? "");
@@ -112,16 +114,16 @@ export async function convertInquiryAction(
     revalidateCrmViews();
     revalidatePath("/app/orders");
 
-    return {
-      error: null,
-      success: `تم التحويل بنجاح. رمز الطلب: ${result.order.code}`,
-    };
+    newOrderId = result.order.id;
   } catch (error) {
     return {
       error: toErrorMessage(error, "تعذّر تحويل الاستفسار."),
       success: null,
     };
   }
+
+  // redirect() throws NEXT_REDIRECT — must be outside try/catch
+  redirect(`/app/orders/${newOrderId}`);
 }
 
 export async function updateInquiryStageAction(
