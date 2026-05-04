@@ -15,6 +15,7 @@ export const GET = defineRoute({
   async handler({ session, params }) {
     const balance = await service.getCustomerBalance(
       session.factoryId,
+      session.role,
       params.id,
     );
     return ok({ customerId: params.id, currency: "SAR", ...balance });

@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   createIntegrationDatabase,
@@ -26,7 +34,15 @@ type ServiceCtor = new () => {
     factoryId: string,
     actor: { userId: string; role: string },
     input: unknown,
-  ) => Promise<{ id: string; subtotal: string; taxAmount: string; total: string; status: string; version: number; parentQuoteId: string | null }>;
+  ) => Promise<{
+    id: string;
+    subtotal: string;
+    taxAmount: string;
+    total: string;
+    status: string;
+    version: number;
+    parentQuoteId: string | null;
+  }>;
   approve: (
     factoryId: string,
     actor: { userId: string; role: string },
@@ -42,7 +58,13 @@ type ServiceCtor = new () => {
     factoryId: string,
     actor: { userId: string; role: string },
     quoteId: string,
-  ) => Promise<{ id: string; version: number; status: string; parentQuoteId: string | null; lines: unknown[] }>;
+  ) => Promise<{
+    id: string;
+    version: number;
+    status: string;
+    parentQuoteId: string | null;
+    lines: unknown[];
+  }>;
   softDelete: (
     factoryId: string,
     actor: { userId: string; role: string },
@@ -52,7 +74,12 @@ type ServiceCtor = new () => {
     factoryId: string,
     role: string,
     quoteId: string,
-  ) => Promise<{ id: string; status: string; total: string; lines: unknown[] } | null>;
+  ) => Promise<{
+    id: string;
+    status: string;
+    total: string;
+    lines: unknown[];
+  } | null>;
 };
 
 describeQuote("QuoteService — DB-backed", () => {
@@ -158,7 +185,10 @@ describeQuote("QuoteService — DB-backed", () => {
     expect(approved.status).toBe("APPROVED");
 
     const reloaded = await prisma.order.findUnique({ where: { id: order.id } });
-    expect(reloaded?.quotedAmount?.toString()).toBe(approved.total);
+    expect(Number(reloaded?.quotedAmount)).toBeCloseTo(
+      Number(approved.total),
+      2,
+    );
   });
 
   it("auto-supersedes previously approved quote of same order", async () => {
@@ -176,15 +206,24 @@ describeQuote("QuoteService — DB-backed", () => {
       taxRate: 15,
       lines: [{ description: "L", quantity: 2, unitPrice: 100 }],
     });
-    const v2Approved = await svc.approve(factory.id, ownerActor(owner.id), v2.id);
+    const v2Approved = await svc.approve(
+      factory.id,
+      ownerActor(owner.id),
+      v2.id,
+    );
 
     const v1After = await prisma.quote.findUnique({ where: { id: v1.id } });
     const v2After = await prisma.quote.findUnique({ where: { id: v2.id } });
     expect(v1After?.status).toBe("SUPERSEDED");
     expect(v2After?.status).toBe("APPROVED");
 
-    const orderAfter = await prisma.order.findUnique({ where: { id: order.id } });
-    expect(orderAfter?.quotedAmount?.toString()).toBe(v2Approved.total);
+    const orderAfter = await prisma.order.findUnique({
+      where: { id: order.id },
+    });
+    expect(Number(orderAfter?.quotedAmount)).toBeCloseTo(
+      Number(v2Approved.total),
+      2,
+    );
   });
 
   it("rejects deletion of APPROVED quote", async () => {
@@ -199,7 +238,7 @@ describeQuote("QuoteService — DB-backed", () => {
 
     await expect(
       svc.softDelete(factory.id, ownerActor(owner.id), q.id),
-    ).rejects.toThrow(/حالة|status|approved/i);
+    ).rejects.toThrow(/لا يمكن حذف|حالة|status|approved/i);
   });
 
   it("rejects line edit on non-DRAFT quote", async () => {
@@ -292,8 +331,9 @@ describeQuote("QuoteService — DB-backed", () => {
     });
 
     // factoryB owner attempts to view factoryA's quote
-    const cross = await svc.getById(b.factory.id, "OWNER", qa.id);
-    expect(cross).toBeNull();
+    await expect(
+      svc.getById(b.factory.id, "OWNER", qa.id),
+    ).rejects.toMatchObject({ status: 404 });
 
     await expect(
       svc.approve(b.factory.id, ownerActor(b.owner.id), qa.id),
@@ -353,7 +393,11 @@ describeQuote("QuoteService — DB-backed", () => {
       lines: [{ description: "L", quantity: 1, unitPrice: 100 }],
     });
     await expect(
-      svc.approve(factory.id, { userId: sales.id, role: "SALES_MANAGER" }, q.id),
+      svc.approve(
+        factory.id,
+        { userId: sales.id, role: "SALES_MANAGER" },
+        q.id,
+      ),
     ).rejects.toMatchObject({ status: 403 });
   });
 

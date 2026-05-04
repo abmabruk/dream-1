@@ -394,12 +394,14 @@ export class PaymentService {
   // ---------- Reporting ----------
   async getCustomerBalance(
     factoryId: string,
+    role: UserRole,
     customerId: string,
   ): Promise<{
     totalInvoiced: string;
     totalPaid: string;
     outstanding: string;
   }> {
+    this.assertView(role);
     const { totalInvoiced, totalPaid } =
       await this.repository.getCustomerBalance(factoryId, customerId);
     const ti = roundMoney(totalInvoiced);

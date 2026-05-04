@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   createIntegrationDatabase,
@@ -44,7 +52,11 @@ type ServiceCtor = new () => {
     actor: Actor,
     input: unknown,
   ) => Promise<{ id: string; code: string; variants: unknown[] }>;
-  softDelete: (factoryId: string, actor: Actor, id: string) => Promise<{ id: string }>;
+  softDelete: (
+    factoryId: string,
+    actor: Actor,
+    id: string,
+  ) => Promise<{ id: string }>;
   updateVariant: (
     factoryId: string,
     actor: Actor,
@@ -233,10 +245,12 @@ describeProduct("ProductService — DB-backed", () => {
     const svc = ensureService();
     const pa = await svc.create(a.factory.id, ownerActor(a.owner.id), {
       code: "P-X",
-      name: "X",
+      name: "Product X",
       defaultUnitPrice: 1,
     });
-    await expect(svc.getById(b.factory.id, "OWNER", pa.id)).rejects.toMatchObject({
+    await expect(
+      svc.getById(b.factory.id, "OWNER", pa.id),
+    ).rejects.toMatchObject({
       status: 404,
     });
     const bList = await svc.list(b.factory.id, "OWNER");
@@ -266,11 +280,15 @@ describeProduct("ProductService — DB-backed", () => {
     expect(fetched.id).toBe(p.id);
 
     await expect(
-      svc.create(factory.id, { userId: sales.id, role: "SALES_MANAGER" }, {
-        code: "P-6",
-        name: "Denied",
-        defaultUnitPrice: 1,
-      }),
+      svc.create(
+        factory.id,
+        { userId: sales.id, role: "SALES_MANAGER" },
+        {
+          code: "P-6",
+          name: "Denied",
+          defaultUnitPrice: 1,
+        },
+      ),
     ).rejects.toMatchObject({ status: 403 });
   });
 });

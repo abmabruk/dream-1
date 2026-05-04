@@ -1051,10 +1051,12 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     );
     expect(fmList.length).toBeGreaterThan(0);
 
+    // WORKER has no costs:manage permission — denial check (FACTORY_MANAGER
+    // is the all-powerful manager role and intentionally has all permissions).
     await expect(
       costSvc.create(
         factoryId,
-        { userId: users.factoryManager.id, role: "FACTORY_MANAGER" as never },
+        { userId: users.worker1.id, role: "WORKER" as never },
         {
           projectId,
           amount: "100.00",

@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   createIntegrationDatabase,
@@ -37,15 +45,40 @@ type CreditNoteDTO = {
 };
 
 type InvoiceServiceCtor = new () => {
-  create: (factoryId: string, actor: Actor, input: unknown) => Promise<InvoiceDTO>;
-  send: (factoryId: string, actor: Actor, invoiceId: string) => Promise<InvoiceDTO>;
+  create: (
+    factoryId: string,
+    actor: Actor,
+    input: unknown,
+  ) => Promise<InvoiceDTO>;
+  send: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+  ) => Promise<InvoiceDTO>;
 };
 
 type CreditNoteServiceCtor = new () => {
-  create: (factoryId: string, actor: Actor, invoiceId: string, input: unknown) => Promise<CreditNoteDTO>;
-  issue: (factoryId: string, actor: Actor, creditNoteId: string) => Promise<CreditNoteDTO>;
-  void: (factoryId: string, actor: Actor, creditNoteId: string) => Promise<CreditNoteDTO>;
-  getById: (factoryId: string, role: string, creditNoteId: string) => Promise<CreditNoteDTO | null>;
+  create: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+    input: unknown,
+  ) => Promise<CreditNoteDTO>;
+  issue: (
+    factoryId: string,
+    actor: Actor,
+    creditNoteId: string,
+  ) => Promise<CreditNoteDTO>;
+  void: (
+    factoryId: string,
+    actor: Actor,
+    creditNoteId: string,
+  ) => Promise<CreditNoteDTO>;
+  getById: (
+    factoryId: string,
+    role: string,
+    creditNoteId: string,
+  ) => Promise<CreditNoteDTO | null>;
 };
 
 describeCN("CreditNoteService — DB-backed", () => {
@@ -99,7 +132,9 @@ describeCN("CreditNoteService — DB-backed", () => {
 
   function ensureInvoice() {
     if (!InvoiceService) {
-      throw new Error("InvoiceService not available — required for these tests");
+      throw new Error(
+        "InvoiceService not available — required for these tests",
+      );
     }
     return new InvoiceService();
   }
@@ -128,7 +163,11 @@ describeCN("CreditNoteService — DB-backed", () => {
     return { factory, owner, customer };
   }
 
-  async function makeSentInvoice(factoryId: string, actor: Actor, customerId: string) {
+  async function makeSentInvoice(
+    factoryId: string,
+    actor: Actor,
+    customerId: string,
+  ) {
     const inv = ensureInvoice();
     const draft = await inv.create(factoryId, actor, {
       customerId,
@@ -140,7 +179,11 @@ describeCN("CreditNoteService — DB-backed", () => {
 
   it("creates a DRAFT credit note linked to invoice", async () => {
     const { factory, owner, customer } = await makeScenario("a");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+    );
     const svc = ensureCN();
     const cn = await svc.create(factory.id, ownerActor(owner.id), sent.id, {
       reason: "partial return",
@@ -153,7 +196,11 @@ describeCN("CreditNoteService — DB-backed", () => {
 
   it("issue → ISSUED, gets number CN-2026-00001", async () => {
     const { factory, owner, customer } = await makeScenario("b");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+    );
     const svc = ensureCN();
     const cn = await svc.create(factory.id, ownerActor(owner.id), sent.id, {
       reason: "return",
@@ -167,7 +214,11 @@ describeCN("CreditNoteService — DB-backed", () => {
 
   it("void ISSUED → VOID", async () => {
     const { factory, owner, customer } = await makeScenario("c");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+    );
     const svc = ensureCN();
     const cn = await svc.create(factory.id, ownerActor(owner.id), sent.id, {
       reason: "return",
@@ -182,7 +233,11 @@ describeCN("CreditNoteService — DB-backed", () => {
 
   it("line totals computed correctly (qty=2 price=50 tax 15% → 100/15/115)", async () => {
     const { factory, owner, customer } = await makeScenario("d");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+    );
     const svc = ensureCN();
     const cn = await svc.create(factory.id, ownerActor(owner.id), sent.id, {
       reason: "return",
@@ -197,14 +252,19 @@ describeCN("CreditNoteService — DB-backed", () => {
   it("cross-factory isolation: factoryB cannot read factoryA credit note", async () => {
     const a = await makeScenario("xa");
     const b = await makeScenario("xb");
-    const sent = await makeSentInvoice(a.factory.id, ownerActor(a.owner.id), a.customer.id);
+    const sent = await makeSentInvoice(
+      a.factory.id,
+      ownerActor(a.owner.id),
+      a.customer.id,
+    );
     const svc = ensureCN();
     const cn = await svc.create(a.factory.id, ownerActor(a.owner.id), sent.id, {
       reason: "return",
       taxRate: 15,
       lines: [{ description: "Returned", quantity: 1, unitPrice: 50 }],
     });
-    const cross = await svc.getById(b.factory.id, "OWNER", cn.id);
-    expect(cross).toBeNull();
+    await expect(
+      svc.getById(b.factory.id, "OWNER", cn.id),
+    ).rejects.toMatchObject({ status: 404 });
   });
 });

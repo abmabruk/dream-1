@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   createIntegrationDatabase,
@@ -51,19 +59,39 @@ type CustomerBalance = {
 };
 
 type InvoiceServiceCtor = new () => {
-  create: (factoryId: string, actor: Actor, input: unknown) => Promise<InvoiceDTO>;
-  send: (factoryId: string, actor: Actor, invoiceId: string) => Promise<InvoiceDTO>;
-  getById: (factoryId: string, role: string, invoiceId: string) => Promise<InvoiceDTO | null>;
+  create: (
+    factoryId: string,
+    actor: Actor,
+    input: unknown,
+  ) => Promise<InvoiceDTO>;
+  send: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+  ) => Promise<InvoiceDTO>;
+  getById: (
+    factoryId: string,
+    role: string,
+    invoiceId: string,
+  ) => Promise<InvoiceDTO | null>;
 };
 
 type PaymentServiceCtor = new () => {
-  record: (factoryId: string, actor: Actor, input: unknown) => Promise<PaymentDTO>;
-  softDelete: (factoryId: string, actor: Actor, paymentId: string) => Promise<{ id: string }>;
+  record: (
+    factoryId: string,
+    actor: Actor,
+    input: unknown,
+  ) => Promise<PaymentDTO>;
+  softDelete: (
+    factoryId: string,
+    actor: Actor,
+    paymentId: string,
+  ) => Promise<{ id: string }>;
   allocate?: (
     factoryId: string,
     actor: Actor,
     paymentId: string,
-    allocation: { invoiceId: string; amount: number | string },
+    allocations: Array<{ invoiceId: string; amount: number | string }>,
   ) => Promise<PaymentDTO>;
   removeAllocation?: (
     factoryId: string,
@@ -71,7 +99,11 @@ type PaymentServiceCtor = new () => {
     paymentId: string,
     allocationId: string,
   ) => Promise<PaymentDTO>;
-  getById?: (factoryId: string, role: string, paymentId: string) => Promise<PaymentDTO | null>;
+  getById?: (
+    factoryId: string,
+    role: string,
+    paymentId: string,
+  ) => Promise<PaymentDTO | null>;
   getCustomerBalance?: (
     factoryId: string,
     role: string,
@@ -94,9 +126,10 @@ describePayments("PaymentService — DB-backed", () => {
     await disconnectGlobalPrisma();
     vi.resetModules();
     try {
-      const mod = (await import("@/modules/invoices/invoice.service")) as unknown as {
-        InvoiceService: InvoiceServiceCtor;
-      };
+      const mod =
+        (await import("@/modules/invoices/invoice.service")) as unknown as {
+          InvoiceService: InvoiceServiceCtor;
+        };
       InvoiceService = mod.InvoiceService;
     } catch {
       InvoiceService = undefined;
@@ -130,7 +163,9 @@ describePayments("PaymentService — DB-backed", () => {
 
   function ensureInvoice() {
     if (!InvoiceService) {
-      throw new Error("InvoiceService not available — required for these tests");
+      throw new Error(
+        "InvoiceService not available — required for these tests",
+      );
     }
     return new InvoiceService();
   }
@@ -196,7 +231,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("record payment with no allocations → unallocated credit, invoice unchanged", async () => {
     const { factory, owner, customer } = await makeScenario("a");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const svc = ensurePayments();
     const pay = await svc.record(factory.id, ownerActor(owner.id), {
       customerId: customer.id,
@@ -211,7 +251,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("record payment with allocation → invoice.amountPaid increments, status=PARTIALLY_PAID", async () => {
     const { factory, owner, customer } = await makeScenario("b");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     await svc.record(factory.id, ownerActor(owner.id), {
@@ -226,7 +271,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("record payment for full invoice amount → status=PAID", async () => {
     const { factory, owner, customer } = await makeScenario("c");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     await svc.record(factory.id, ownerActor(owner.id), {
@@ -240,7 +290,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("record payment with allocations summing > amount throws", async () => {
     const { factory, owner, customer } = await makeScenario("d");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const svc = ensurePayments();
     await expect(
       svc.record(factory.id, ownerActor(owner.id), {
@@ -254,7 +309,12 @@ describePayments("PaymentService — DB-backed", () => {
   it("record payment with allocation to wrong factory's invoice throws", async () => {
     const a = await makeScenario("e1");
     const b = await makeScenario("e2");
-    const sentA = await makeSentInvoice(a.factory.id, ownerActor(a.owner.id), a.customer.id, 100);
+    const sentA = await makeSentInvoice(
+      a.factory.id,
+      ownerActor(a.owner.id),
+      a.customer.id,
+      100,
+    );
     const svc = ensurePayments();
     await expect(
       svc.record(b.factory.id, ownerActor(b.owner.id), {
@@ -267,7 +327,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("softDelete payment → reverses allocations (invoice.amountPaid restored)", async () => {
     const { factory, owner, customer } = await makeScenario("f");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     const pay = await svc.record(factory.id, ownerActor(owner.id), {
@@ -285,7 +350,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("record REFUND with allocation → invoice.amountPaid decreases", async () => {
     const { factory, owner, customer } = await makeScenario("g");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     // first pay it fully
@@ -305,12 +375,19 @@ describePayments("PaymentService — DB-backed", () => {
     });
     inv = await ensureInvoice().getById(factory.id, "OWNER", sent.id);
     expect(Number(inv?.amountPaid ?? "0")).toBeCloseTo(total / 2, 2);
-    expect(inv?.status === "PARTIALLY_PAID" || inv?.status === "SENT").toBe(true);
+    expect(inv?.status === "PARTIALLY_PAID" || inv?.status === "SENT").toBe(
+      true,
+    );
   });
 
   it("allocate after record (separate call) works", async () => {
     const { factory, owner, customer } = await makeScenario("h");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     if (typeof svc.allocate !== "function") {
@@ -321,17 +398,21 @@ describePayments("PaymentService — DB-backed", () => {
       customerId: customer.id,
       amount: total,
     });
-    await svc.allocate(factory.id, ownerActor(owner.id), pay.id, {
-      invoiceId: sent.id,
-      amount: total,
-    });
+    await svc.allocate(factory.id, ownerActor(owner.id), pay.id, [
+      { invoiceId: sent.id, amount: total },
+    ]);
     const inv = await ensureInvoice().getById(factory.id, "OWNER", sent.id);
     expect(inv?.status).toBe("PAID");
   });
 
   it("removeAllocation reverses that allocation", async () => {
     const { factory, owner, customer } = await makeScenario("i");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 100);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      100,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     if (typeof svc.removeAllocation !== "function") {
@@ -346,7 +427,12 @@ describePayments("PaymentService — DB-backed", () => {
     if (!allocId) {
       throw new Error("payment.allocations[0].id not present in DTO");
     }
-    await svc.removeAllocation(factory.id, ownerActor(owner.id), pay.id, allocId);
+    await svc.removeAllocation(
+      factory.id,
+      ownerActor(owner.id),
+      pay.id,
+      allocId,
+    );
     const inv = await ensureInvoice().getById(factory.id, "OWNER", sent.id);
     expect(Number(inv?.amountPaid ?? "0")).toBeCloseTo(0, 2);
     expect(inv?.status).toBe("SENT");
@@ -354,7 +440,12 @@ describePayments("PaymentService — DB-backed", () => {
 
   it("getCustomerBalance returns correct totals", async () => {
     const { factory, owner, customer } = await makeScenario("j");
-    const sent = await makeSentInvoice(factory.id, ownerActor(owner.id), customer.id, 200);
+    const sent = await makeSentInvoice(
+      factory.id,
+      ownerActor(owner.id),
+      customer.id,
+      200,
+    );
     const total = Number(sent.total);
     const svc = ensurePayments();
     if (typeof svc.getCustomerBalance !== "function") {
@@ -377,7 +468,12 @@ describePayments("PaymentService — DB-backed", () => {
   it("cross-factory isolation: factoryB cannot read factoryA payment", async () => {
     const a = await makeScenario("k1");
     const b = await makeScenario("k2");
-    const sentA = await makeSentInvoice(a.factory.id, ownerActor(a.owner.id), a.customer.id, 100);
+    const sentA = await makeSentInvoice(
+      a.factory.id,
+      ownerActor(a.owner.id),
+      a.customer.id,
+      100,
+    );
     const svc = ensurePayments();
     const pay = await svc.record(a.factory.id, ownerActor(a.owner.id), {
       customerId: a.customer.id,
@@ -385,18 +481,23 @@ describePayments("PaymentService — DB-backed", () => {
       allocations: [{ invoiceId: sentA.id, amount: 50 }],
     });
     if (typeof svc.getById !== "function") return;
-    const cross = await svc.getById(b.factory.id, "OWNER", pay.id);
-    expect(cross).toBeNull();
+    await expect(
+      svc.getById(b.factory.id, "OWNER", pay.id),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it("permission denial: SALES_MANAGER cannot manage (record) payments", async () => {
     const { factory, sales, customer } = await makeScenario("l");
     const svc = ensurePayments();
     await expect(
-      svc.record(factory.id, { userId: sales.id, role: "SALES_MANAGER" }, {
-        customerId: customer.id,
-        amount: 50,
-      }),
+      svc.record(
+        factory.id,
+        { userId: sales.id, role: "SALES_MANAGER" },
+        {
+          customerId: customer.id,
+          amount: 50,
+        },
+      ),
     ).rejects.toThrow();
   });
 });

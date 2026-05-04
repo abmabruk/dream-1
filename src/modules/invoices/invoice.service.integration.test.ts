@@ -1,5 +1,14 @@
 import { execFileSync } from "node:child_process";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "@prisma/client";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 
 import {
   createIntegrationDatabase,
@@ -42,19 +51,61 @@ type InvoiceDTO = {
 };
 
 type InvoiceServiceCtor = new () => {
-  create: (factoryId: string, actor: Actor, input: unknown) => Promise<InvoiceDTO>;
-  addLine: (factoryId: string, actor: Actor, invoiceId: string, line: unknown) => Promise<InvoiceDTO>;
-  send: (factoryId: string, actor: Actor, invoiceId: string) => Promise<InvoiceDTO>;
-  softDelete: (factoryId: string, actor: Actor, invoiceId: string) => Promise<{ id: string }>;
-  void: (factoryId: string, actor: Actor, invoiceId: string, reason: string) => Promise<InvoiceDTO>;
-  generateFromQuote: (factoryId: string, actor: Actor, quoteId: string) => Promise<InvoiceDTO>;
-  applyPayment: (factoryId: string, actor: Actor, invoiceId: string, amount: number) => Promise<InvoiceDTO>;
-  getById: (factoryId: string, role: string, invoiceId: string) => Promise<InvoiceDTO | null>;
+  create: (
+    factoryId: string,
+    actor: Actor,
+    input: unknown,
+  ) => Promise<InvoiceDTO>;
+  addLine: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+    line: unknown,
+  ) => Promise<InvoiceDTO>;
+  send: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+  ) => Promise<InvoiceDTO>;
+  softDelete: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+  ) => Promise<{ id: string }>;
+  void: (
+    factoryId: string,
+    actor: Actor,
+    invoiceId: string,
+    reason: string,
+  ) => Promise<InvoiceDTO>;
+  generateFromQuote: (
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ) => Promise<InvoiceDTO>;
+  applyPayment: (
+    tx: unknown,
+    invoiceId: string,
+    amount: Prisma.Decimal,
+  ) => Promise<{ status: string; amountPaid: Prisma.Decimal }>;
+  getById: (
+    factoryId: string,
+    role: string,
+    invoiceId: string,
+  ) => Promise<InvoiceDTO | null>;
 };
 
 type QuoteServiceCtor = new () => {
-  create: (factoryId: string, actor: Actor, input: unknown) => Promise<{ id: string; total: string }>;
-  approve: (factoryId: string, actor: Actor, quoteId: string) => Promise<{ id: string; total: string }>;
+  create: (
+    factoryId: string,
+    actor: Actor,
+    input: unknown,
+  ) => Promise<{ id: string; total: string }>;
+  approve: (
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ) => Promise<{ id: string; total: string }>;
 };
 
 describeInvoice("InvoiceService — DB-backed", () => {
@@ -80,9 +131,10 @@ describeInvoice("InvoiceService — DB-backed", () => {
       invoiceLoadError = err as Error;
     }
     try {
-      const qmod = (await import("@/modules/quotes/quote.service")) as unknown as {
-        QuoteService: QuoteServiceCtor;
-      };
+      const qmod =
+        (await import("@/modules/quotes/quote.service")) as unknown as {
+          QuoteService: QuoteServiceCtor;
+        };
       QuoteService = qmod.QuoteService;
     } catch {
       QuoteService = undefined;
@@ -291,7 +343,12 @@ describeInvoice("InvoiceService — DB-backed", () => {
       lines: [{ description: "L", quantity: 1, unitPrice: 100 }],
     });
     await svc.send(factory.id, ownerActor(owner.id), inv.id);
-    const voided = await svc.void(factory.id, ownerActor(owner.id), inv.id, "duplicate entry");
+    const voided = await svc.void(
+      factory.id,
+      ownerActor(owner.id),
+      inv.id,
+      "duplicate entry",
+    );
     expect(voided.status).toBe("VOID");
     expect(voided.voidedAt).toBeTruthy();
     expect(voided.voidedReason).toBe("duplicate entry");
@@ -301,8 +358,16 @@ describeInvoice("InvoiceService — DB-backed", () => {
     const { factory, owner, order } = await makeBaseScenario("j");
     if (!QuoteService) return; // skip silently if quote module missing
     const svc = ensureInvoiceService();
-    const approved = await makeApprovedQuote(factory.id, ownerActor(owner.id), order.id);
-    const inv = await svc.generateFromQuote(factory.id, ownerActor(owner.id), approved.id);
+    const approved = await makeApprovedQuote(
+      factory.id,
+      ownerActor(owner.id),
+      order.id,
+    );
+    const inv = await svc.generateFromQuote(
+      factory.id,
+      ownerActor(owner.id),
+      approved.id,
+    );
     expect(inv.status).toBe("DRAFT");
     expect(Number(inv.total)).toBeCloseTo(Number(approved.total), 2);
     expect((inv.lines ?? []).length).toBeGreaterThan(0);
@@ -330,8 +395,9 @@ describeInvoice("InvoiceService — DB-backed", () => {
     const inv = await svc.create(a.factory.id, ownerActor(a.owner.id), {
       customerId: a.customer.id,
     });
-    const cross = await svc.getById(b.factory.id, "OWNER", inv.id);
-    expect(cross).toBeNull();
+    await expect(
+      svc.getById(b.factory.id, "OWNER", inv.id),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it("applyPayment partial → status=PARTIALLY_PAID", async () => {
@@ -344,11 +410,8 @@ describeInvoice("InvoiceService — DB-backed", () => {
     });
     const sent = await svc.send(factory.id, ownerActor(owner.id), inv.id);
     const total = Number(sent.total);
-    const partial = await svc.applyPayment(
-      factory.id,
-      ownerActor(owner.id),
-      inv.id,
-      total / 2,
+    const partial = await prisma.$transaction((tx) =>
+      svc.applyPayment(tx, inv.id, new Prisma.Decimal(total / 2)),
     );
     expect(partial.status).toBe("PARTIALLY_PAID");
   });
@@ -362,11 +425,8 @@ describeInvoice("InvoiceService — DB-backed", () => {
       lines: [{ description: "L", quantity: 1, unitPrice: 100 }],
     });
     const sent = await svc.send(factory.id, ownerActor(owner.id), inv.id);
-    const paid = await svc.applyPayment(
-      factory.id,
-      ownerActor(owner.id),
-      inv.id,
-      Number(sent.total),
+    const paid = await prisma.$transaction((tx) =>
+      svc.applyPayment(tx, inv.id, new Prisma.Decimal(Number(sent.total))),
     );
     expect(paid.status).toBe("PAID");
   });
@@ -382,7 +442,9 @@ describeInvoice("InvoiceService — DB-backed", () => {
     await svc.send(factory.id, ownerActor(owner.id), inv.id);
     await svc.void(factory.id, ownerActor(owner.id), inv.id, "wrong");
     await expect(
-      svc.applyPayment(factory.id, ownerActor(owner.id), inv.id, 10),
+      prisma.$transaction((tx) =>
+        svc.applyPayment(tx, inv.id, new Prisma.Decimal(10)),
+      ),
     ).rejects.toThrow();
   });
 
@@ -398,6 +460,9 @@ describeInvoice("InvoiceService — DB-backed", () => {
     expect(sent.sellerNameSnapshot).toBeTruthy();
     expect(sent.buyerNameSnapshot).toBeTruthy();
     // taxNumber may be null if Customer.taxNumber column not yet added; allow either truthy or null
-    expect(sent.buyerTaxNumberSnapshot === null || typeof sent.buyerTaxNumberSnapshot === "string").toBe(true);
+    expect(
+      sent.buyerTaxNumberSnapshot === null ||
+        typeof sent.buyerTaxNumberSnapshot === "string",
+    ).toBe(true);
   });
 });
