@@ -204,6 +204,8 @@ model Factory {
   stages ProjectStage[]
   stageInstances ProjectStageInstance[]
   locations Location[]
+  quotes Quote[]
+  quoteLines QuoteLine[]
 }
 
 model User {
@@ -237,6 +239,9 @@ model User {
   uploadedTaskAttachments TaskAttachment[] @relation("TaskAttachmentUploadedBy")
   authoredTaskComments TaskComment[] @relation("TaskCommentAuthor")
   stageInstancesOwned ProjectStageInstance[] @relation("StageInstanceOwner")
+  quotesCreated  Quote[]       @relation("QuoteCreatedBy")
+  quotesApproved Quote[]       @relation("QuoteApprovedBy")
+  inquiriesConverted Inquiry[] @relation("InquiryConvertedBy")
 
   @@index([factoryId, role])
 }
@@ -254,12 +259,21 @@ model Inquiry {
   budgetAmount   Decimal?      @db.Decimal(12, 2)
   nextFollowUpAt DateTime?
   notes          String?
+  convertedCustomerId String?
+  convertedOrderId    String?
+  convertedAt         DateTime?
+  convertedByUserId   String?
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
   factory        Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   assignedTo     User?         @relation("InquiryAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  convertedCustomer Customer? @relation("InquiryConvertedCustomer", fields: [convertedCustomerId], references: [id], onDelete: SetNull)
+  convertedOrder    Order?    @relation("InquiryConvertedOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  convertedBy       User?     @relation("InquiryConvertedBy", fields: [convertedByUserId], references: [id], onDelete: SetNull)
 
   @@index([factoryId, stage, nextFollowUpAt])
+  @@index([convertedCustomerId])
+  @@index([convertedOrderId])
 }
 
 model Session {
@@ -287,6 +301,7 @@ model Customer {
   updatedAt    DateTime @updatedAt
   factory      Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   orders       Order[]
+  convertedFromInquiries Inquiry[] @relation("InquiryConvertedCustomer")
 
   @@index([factoryId, name])
 }
@@ -317,6 +332,8 @@ model Order {
   events         OrderEvent[]
   assignments    Assignment[]
   projects       Project[]
+  quotes         Quote[]
+  convertedFromInquiries Inquiry[] @relation("InquiryConvertedOrder")
 
   @@index([factoryId, status])
   @@unique([factoryId, code])
@@ -552,17 +569,20 @@ model ProjectCost {
   updatedAt    DateTime       @updatedAt
   stageInstanceId String?
   locationId   String?
+  quoteLineId  String?
   factory      Factory        @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   project      Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   task         ProjectTask?   @relation(fields: [taskId], references: [id], onDelete: SetNull)
   createdBy    User?          @relation("ProjectCostCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   stageInstance ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
   location     Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  quoteLine    QuoteLine?     @relation(fields: [quoteLineId], references: [id], onDelete: SetNull)
 
   @@index([factoryId, projectId, incurredAt])
   @@index([factoryId, category])
   @@index([taskId])
   @@index([locationId])
+  @@index([quoteLineId])
 }
 
 
@@ -669,5 +689,85 @@ model Location {
   costs       ProjectCost[]
 
   @@index([factoryId, projectId, sortOrder])
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  APPROVED
+  SUPERSEDED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+
+model Quote {
+  id                  String      @id @default(cuid())
+  factoryId           String
+  orderId             String
+  version             Int         @default(1)
+  status              QuoteStatus @default(DRAFT)
+  parentQuoteId       String?
+
+  currency            String      @default("SAR")
+  taxRate             Decimal     @default(15.00) @db.Decimal(5, 2)
+  taxInclusive        Boolean     @default(false)
+  subtotal            Decimal     @default(0) @db.Decimal(14, 2)
+  discountAmount      Decimal     @default(0) @db.Decimal(14, 2)
+  discountReason      String?
+  taxAmount           Decimal     @default(0) @db.Decimal(14, 2)
+  total               Decimal     @default(0) @db.Decimal(14, 2)
+
+  validUntil          DateTime?
+  sentToCustomerAt    DateTime?
+  approvedAt          DateTime?
+  approvedById        String?
+
+  notes               String?
+  internalNotes       String?
+
+  deletedAt           DateTime?
+  createdById         String?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+
+  factory             Factory     @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  order               Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  parent              Quote?      @relation("QuoteParent", fields: [parentQuoteId], references: [id], onDelete: SetNull)
+  children            Quote[]     @relation("QuoteParent")
+  createdBy           User?       @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  approvedBy          User?       @relation("QuoteApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  lines               QuoteLine[]
+
+  @@unique([orderId, version])
+  @@index([factoryId, status, orderId])
+  @@index([factoryId, validUntil])
+  @@index([deletedAt])
+}
+
+model QuoteLine {
+  id              String   @id @default(cuid())
+  factoryId       String
+  quoteId         String
+  sortOrder       Int      @default(0)
+
+  productId       String?
+
+  description     String
+  sku             String?
+  quantity        Decimal  @db.Decimal(14, 4)
+  unitPrice       Decimal  @db.Decimal(14, 4)
+  lineTotal       Decimal  @db.Decimal(14, 2)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  factory         Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  quote           Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  costs           ProjectCost[]
+
+  @@index([quoteId, sortOrder])
+  @@index([factoryId, productId])
 }
 
