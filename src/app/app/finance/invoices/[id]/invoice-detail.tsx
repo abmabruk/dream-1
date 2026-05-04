@@ -28,6 +28,8 @@ import {
   type InvoiceLineDetail,
 } from "@/modules/invoices/invoice.schemas";
 
+import { RecordPaymentForm } from "../../payments/record-payment-form";
+
 import { CreditNoteForm } from "../credit-note-form";
 
 interface CustomerInfo {
@@ -47,6 +49,7 @@ interface InvoiceDetailViewProps {
   canIssue: boolean;
   canVoid: boolean;
   canCreditNote: boolean;
+  canRecordPayment?: boolean;
 }
 
 type LineDraft = {
@@ -69,6 +72,7 @@ export function InvoiceDetailView({
   canIssue,
   canVoid,
   canCreditNote,
+  canRecordPayment = false,
 }: InvoiceDetailViewProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -78,6 +82,7 @@ export function InvoiceDetailView({
   const [busy, setBusy] = useState<string | null>(null);
   const [newLine, setNewLine] = useState<LineDraft>(EMPTY_LINE);
   const [showCreditForm, setShowCreditForm] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const isDraft = invoice.status === "DRAFT";
   const isOpen =
@@ -335,6 +340,16 @@ export function InvoiceDetailView({
                 disabled={busy !== null}
               >
                 {busy === "void" ? "جاري الإلغاء…" : "إلغاء"}
+              </button>
+            ) : null}
+            {isOpen && canRecordPayment ? (
+              <button
+                type="button"
+                className="button-primary text-sm"
+                onClick={() => setShowPaymentForm(true)}
+                disabled={busy !== null}
+              >
+                تسجيل دفعة
               </button>
             ) : null}
             {(isOpen || isPaid) && canCreditNote ? (
@@ -766,6 +781,29 @@ export function InvoiceDetailView({
         onClose={() => setShowCreditForm(false)}
         onCreated={reload}
       />
+
+      {customer ? (
+        <RecordPaymentForm
+          open={showPaymentForm}
+          onClose={() => setShowPaymentForm(false)}
+          onCreated={reload}
+          customers={[{ id: customer.id, name: customer.name }]}
+          openInvoices={[
+            {
+              id: invoice.id,
+              number: invoice.number,
+              customerId: invoice.customerId,
+              total: invoice.total,
+              amountPaid: invoice.amountPaid,
+              amountDue: invoice.amountDue,
+            },
+          ]}
+          initialCustomerId={customer.id}
+          initialAmount={invoice.amountDue}
+          initialAllocationInvoiceId={invoice.id}
+          lockCustomer
+        />
+      ) : null}
     </main>
   );
 }
