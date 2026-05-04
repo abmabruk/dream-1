@@ -224,6 +224,24 @@ export function FinancePage({
         </div>
       </section>
 
+      {/* Invoices shortcut */}
+      <section className="panel">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold">الفواتير</h2>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+              إدارة الفواتير والإشعارات الدائنة وتتبّع المستحقات.
+            </p>
+          </div>
+          <Link
+            href="/app/finance/invoices"
+            className="text-sm font-semibold text-[var(--accent)] hover:underline"
+          >
+            عرض الكل ←
+          </Link>
+        </div>
+      </section>
+
       {/* Projects table */}
       <section className="panel">
         <h2 className="text-lg font-semibold">المشاريع مرتبة حسب الهامش</h2>
