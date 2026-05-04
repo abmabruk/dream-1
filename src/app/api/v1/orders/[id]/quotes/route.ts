@@ -9,7 +9,7 @@ import { QuoteService } from "@/modules/quotes/quote.service";
 
 const service = new QuoteService();
 
-const Params = z.object({ orderId: z.string().min(1) });
+const Params = z.object({ id: z.string().min(1) });
 const CreateBody = CreateQuoteInput.omit({ orderId: true });
 
 export const GET = defineRoute({
@@ -19,7 +19,7 @@ export const GET = defineRoute({
     const quotes = await service.listByOrder(
       session.factoryId,
       session.role,
-      params.orderId,
+      params.id,
     );
     return ok(quotes);
   },
@@ -33,7 +33,7 @@ export const POST = defineRoute({
     const quote = await service.create(
       session.factoryId,
       { userId: session.userId, role: session.role },
-      { ...body, orderId: params.orderId },
+      { ...body, orderId: params.id },
     );
     return ok(quote, { status: 201 });
   },
