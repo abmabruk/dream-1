@@ -18,7 +18,7 @@
  * `QuoteLine` for the imported types.
  */
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StatusPill, useToast } from "@/components/ui";
 import { formatSAR } from "@/lib/format";
@@ -70,13 +70,128 @@ type LineDraft = {
   description: string;
   quantity: string;
   unitPrice: string;
+  productId?: string | null;
 };
 
 const EMPTY_LINE: LineDraft = {
   description: "",
   quantity: "1",
   unitPrice: "0",
+  productId: null,
 };
+
+// Local stub of the product-picker payload until
+// `@/modules/products/product.schemas` lands.
+type ProductPickerHit = {
+  id: string;
+  name: string;
+  sku?: string | null;
+  defaultUnitPrice?: string | number | null;
+};
+
+/**
+ * Tiny self-contained autocomplete that hits `/api/v1/products/picker?q=...`
+ * after the user types ≥2 chars. Falls back to nothing if the API errors.
+ */
+function ProductPicker({
+  value,
+  onChange,
+  onPick,
+  placeholder,
+  disabled,
+  className,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onPick: (hit: ProductPickerHit) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [hits, setHits] = useState<ProductPickerHit[]>([]);
+  const debRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (debRef.current) window.clearTimeout(debRef.current);
+    const q = value.trim();
+    if (q.length < 2) {
+      setHits([]);
+      return;
+    }
+    debRef.current = window.setTimeout(async () => {
+      try {
+        const r = await fetch(
+          `/api/v1/products/picker?q=${encodeURIComponent(q)}`,
+          { cache: "no-store" },
+        );
+        if (!r.ok) return;
+        const json = await r.json();
+        if (!json?.ok) return;
+        const data = (json.data ?? []) as ProductPickerHit[];
+        setHits(data.slice(0, 8));
+      } catch {
+        // Silent — picker is optional.
+      }
+    }, 200);
+    return () => {
+      if (debRef.current) window.clearTimeout(debRef.current);
+    };
+  }, [value]);
+
+  return (
+    <div className="relative">
+      <input
+        type="text"
+        value={value}
+        onChange={(e) => {
+          onChange(e.target.value);
+          setOpen(true);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setTimeout(() => setOpen(false), 150)}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className ?? "input w-full"}
+      />
+      {open && hits.length > 0 ? (
+        <ul
+          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border bg-[var(--panel)] shadow-lg"
+          style={{ borderColor: "var(--border)" }}
+          role="listbox"
+        >
+          {hits.map((h) => (
+            <li key={h.id}>
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onPick(h);
+                  setOpen(false);
+                }}
+                className="flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-sm hover:bg-[var(--panel-strong)]"
+              >
+                <span className="flex flex-col">
+                  <span>{h.name}</span>
+                  {h.sku ? (
+                    <span className="text-xs text-[var(--muted-foreground)]">
+                      {h.sku}
+                    </span>
+                  ) : null}
+                </span>
+                {h.defaultUnitPrice !== null && h.defaultUnitPrice !== undefined ? (
+                  <span className="text-xs tabular-nums text-[var(--muted-foreground)]">
+                    {String(h.defaultUnitPrice)}
+                  </span>
+                ) : null}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export function QuoteForm({
   quoteId,
@@ -205,6 +320,7 @@ export function QuoteForm({
           description: newLine.description,
           quantity: newLine.quantity,
           unitPrice: newLine.unitPrice,
+          ...(newLine.productId ? { productId: newLine.productId } : {}),
         }),
       });
       const json = await r.json();
@@ -491,13 +607,27 @@ export function QuoteForm({
 
         {isDraft && canManageQuotes ? (
           <div className="mt-4 grid gap-2 rounded-xl border border-dashed border-[var(--border)] bg-[var(--panel-strong)] p-3 sm:grid-cols-[1fr_6rem_8rem_auto]">
-            <input
-              type="text"
-              placeholder="وصف البند"
-              className="input"
+            <ProductPicker
+              placeholder="وصف البند (اكتب للبحث في الكتالوج)"
+              className="input w-full"
               value={newLine.description}
-              onChange={(e) =>
-                setNewLine((p) => ({ ...p, description: e.target.value }))
+              onChange={(v) =>
+                setNewLine((p) => ({
+                  ...p,
+                  description: v,
+                  productId: null,
+                }))
+              }
+              onPick={(hit) =>
+                setNewLine((p) => ({
+                  ...p,
+                  description: hit.name,
+                  unitPrice:
+                    hit.defaultUnitPrice !== null && hit.defaultUnitPrice !== undefined
+                      ? String(hit.defaultUnitPrice)
+                      : p.unitPrice,
+                  productId: hit.id,
+                }))
               }
               disabled={busy !== null}
             />

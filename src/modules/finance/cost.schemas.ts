@@ -40,6 +40,7 @@ export const CostInput = z.object({
   currency: z.string().min(3).max(8).default("SAR"),
   description: z.string().min(2).max(400),
   vendorName: z.string().max(200).optional(),
+  vendorId: z.string().min(1).nullable().optional(),
   receiptUrl: z.string().max(500).optional(),
   incurredAt: z.string().min(1),
   stageInstanceId: z.string().min(1).nullable().optional(),
@@ -57,6 +58,9 @@ export type CostListItem = {
   currency: string;
   description: string;
   vendorName: string | null;
+  vendorId: string | null;
+  /** Display name: vendor.name when vendorId is set, else legacy vendorName text. */
+  vendorNameSnapshot: string | null;
   receiptUrl: string | null;
   incurredAt: string;
   createdById: string | null;

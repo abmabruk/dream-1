@@ -29,6 +29,7 @@ type ProjectCostRow = {
   currency: string;
   description: string;
   vendorName: string | null;
+  vendorId: string | null;
   receiptUrl: string | null;
   incurredAt: Date;
   createdById: string | null;
@@ -49,6 +50,10 @@ type ProjectCostWithCreator = ProjectCostRow & {
     id: string;
     name: string;
   } | null;
+  vendor?: {
+    id: string;
+    name: string;
+  } | null;
   quoteLine?: {
     id: string;
     description: string;
@@ -65,6 +70,7 @@ interface ProjectCostDelegate {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
       location?: boolean;
+      vendor?: boolean | { select?: Record<string, unknown> };
       quoteLine?: boolean | { select?: Record<string, unknown> };
     };
   }): Promise<ProjectCostWithCreator>;
@@ -77,6 +83,7 @@ interface ProjectCostDelegate {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
       location?: boolean;
+      vendor?: boolean | { select?: Record<string, unknown> };
       quoteLine?: boolean | { select?: Record<string, unknown> };
     };
     select?: Record<string, boolean>;
@@ -127,6 +134,8 @@ function mapCost(c: ProjectCostWithCreator): CostListItem {
     currency: c.currency,
     description: c.description,
     vendorName: c.vendorName,
+    vendorId: c.vendorId ?? null,
+    vendorNameSnapshot: c.vendor?.name ?? c.vendorName ?? null,
     receiptUrl: c.receiptUrl,
     incurredAt: c.incurredAt.toISOString(),
     createdById: c.createdById,
@@ -194,6 +203,7 @@ export class CostRepository {
           currency: input.currency,
           description: input.description,
           vendorName: input.vendorName || null,
+          vendorId: input.vendorId ?? null,
           receiptUrl: input.receiptUrl || null,
           incurredAt: new Date(input.incurredAt),
           createdById: actorUserId,
@@ -205,6 +215,7 @@ export class CostRepository {
           createdBy: true,
           stageInstance: { include: { stage: true } },
           location: true,
+          vendor: { select: { id: true, name: true } },
           quoteLine: QUOTE_LINE_INCLUDE,
         },
       });
@@ -278,6 +289,7 @@ export class CostRepository {
         createdBy: true,
         stageInstance: { include: { stage: true } },
         location: true,
+        vendor: { select: { id: true, name: true } },
         quoteLine: QUOTE_LINE_INCLUDE,
       },
       orderBy: [{ incurredAt: "desc" }, { createdAt: "desc" }],
@@ -305,6 +317,7 @@ export class CostRepository {
       include: {
         createdBy: true,
         stageInstance: { include: { stage: true } },
+        vendor: { select: { id: true, name: true } },
       },
       orderBy: [{ incurredAt: "desc" }, { createdAt: "desc" }],
       take: 500,

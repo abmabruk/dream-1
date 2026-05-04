@@ -26,7 +26,11 @@ import {
 } from "@/modules/finance/cost.schemas";
 import type { StageInstanceItem } from "@/modules/projects/project.schemas";
 
-import { AddCostDialog, type AvailableQuoteLine } from "./add-cost-dialog";
+import {
+  AddCostDialog,
+  type AvailableQuoteLine,
+  type AvailableVendor,
+} from "./add-cost-dialog";
 
 interface FinancePanelProps {
   projectId: string;
@@ -82,6 +86,37 @@ export function FinancePanel({
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [availableQuoteLines, setAvailableQuoteLines] = useState<AvailableQuoteLine[]>([]);
+  const [availableVendors, setAvailableVendors] = useState<AvailableVendor[]>([]);
+
+  // Fetch vendors for the AddCostDialog combobox. Silent on failure
+  // (forbidden / endpoint not yet shipped) — the dialog still works
+  // with the legacy free-text input.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/v1/vendors`, { cache: "no-store" });
+        if (!r.ok) return;
+        const json = await r.json();
+        if (!json?.ok) return;
+        const data = (json.data ?? []) as Array<{
+          id: string;
+          name: string;
+          code: string | null;
+        }>;
+        if (!cancelled) {
+          setAvailableVendors(
+            data.map((v) => ({ id: v.id, name: v.name, code: v.code ?? null })),
+          );
+        }
+      } catch {
+        // Silent: vendor dropdown is optional.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -488,7 +523,7 @@ export function FinancePanel({
                       </td>
                       <td className="py-2.5">{c.description}</td>
                       <td className="py-2.5 text-[var(--muted-foreground)]">
-                        {c.vendorName ?? "—"}
+                        {c.vendorNameSnapshot ?? c.vendorName ?? "—"}
                       </td>
                       <td className="py-2.5 text-xs text-[var(--muted-foreground)]">
                         {c.quoteLineId && c.quoteLineDescription ? (
@@ -571,6 +606,7 @@ export function FinancePanel({
           defaultStageInstanceId={defaultStageInstanceId}
           locations={locations}
           availableQuoteLines={availableQuoteLines}
+          availableVendors={availableVendors}
           onClose={() => setShowAdd(false)}
           onCreated={async () => {
             setShowAdd(false);
