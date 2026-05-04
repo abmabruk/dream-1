@@ -217,9 +217,7 @@ export function ProductsPage({ canManage }: Props) {
                       className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-black/4"
                       onClick={() => openProduct(p.id)}
                     >
-                      <td className="py-4 pe-4 font-mono text-xs">
-                        {p.code}
-                      </td>
+                      <td className="py-4 pe-4 font-mono text-xs">{p.code}</td>
                       <td className="px-4 py-4 font-medium">{p.name}</td>
                       <td className="px-4 py-4">{p.category ?? "—"}</td>
                       <td className="px-4 py-4">
@@ -445,7 +443,21 @@ function ProductForm({
       )}
 
       <div className="flex justify-end">
-        <button type="submit" className="button-primary" disabled={pending}>
+        <button
+          type="submit"
+          className="button-primary"
+          disabled={pending}
+          onClick={(e) => {
+            // Defensive: ensure submit fires on first click even if the
+            // native click → submit dispatch is suppressed by the dialog
+            // wrapper. Using requestSubmit triggers HTML5 validation and
+            // the form's onSubmit handler exactly once.
+            const form = e.currentTarget.form;
+            if (!form) return;
+            e.preventDefault();
+            form.requestSubmit(e.currentTarget);
+          }}
+        >
           {pending ? "جاري الحفظ..." : mode === "create" ? "إنشاء" : "حفظ"}
         </button>
       </div>
@@ -573,13 +585,10 @@ function VariantsManager({
 
   const addVariant = async (input: VariantInputType) => {
     try {
-      await api<VariantDetail>(
-        `/api/v1/products/${product.id}/variants`,
-        {
-          method: "POST",
-          body: JSON.stringify(input),
-        },
-      );
+      await api<VariantDetail>(`/api/v1/products/${product.id}/variants`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
       setAdding(false);
       await refresh();
       toast("✓ تمت إضافة المتغير", "success");
@@ -688,7 +697,7 @@ function VariantForm({
         name: String(fd.get("name") ?? "").trim(),
         unitPriceDelta: numberOrUndef(fd.get("unitPriceDelta")),
         estimatedUnitCostDelta: numberOrUndef(fd.get("estimatedUnitCostDelta")),
-        isActive: fd.get("isActive") !== "off",
+        isActive: fd.get("isActive") === "on",
       });
     } finally {
       setPending(false);
@@ -717,13 +726,7 @@ function VariantForm({
         />
       </div>
       <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="isActive"
-          defaultChecked
-          value="on"
-        />{" "}
-        نشط
+        <input type="checkbox" name="isActive" defaultChecked value="on" /> نشط
       </label>
       <div className="flex justify-end gap-2">
         <button type="button" className="button-secondary" onClick={onCancel}>
