@@ -7,6 +7,10 @@ import { db, type PrismaTransaction } from "@/lib/db";
 import { HttpError } from "@/lib/http/http-error";
 import { computeTax, lineTotal, roundMoney, sumMoney } from "@/lib/money";
 import { hasPermission } from "@/modules/auth/roles";
+import {
+  emitNotifications,
+  findFactoryUsersByRole,
+} from "@/modules/notifications/notification.emitter";
 
 import {
   CreateInvoiceInput,
@@ -509,6 +513,31 @@ export class InvoiceService {
           total: sent.total.toString(),
         },
       });
+
+      // Notify accountants of the newly issued invoice.
+      const accountants = await findFactoryUsersByRole(
+        factoryId,
+        ["ACCOUNTANT", "OWNER", "FACTORY_MANAGER"],
+        tx,
+      );
+      const customerName = customer?.name ?? "";
+      await emitNotifications(
+        accountants
+          .filter((u) => u.id !== actor.userId)
+          .map((u) => ({
+            factoryId,
+            userId: u.id,
+            type: "INVOICE_SENT" as const,
+            dedupeKey: `INVOICE_SENT:${invoiceId}`,
+            title: `تم إصدار الفاتورة ${number}`,
+            message: `تم إصدار الفاتورة ${number} للعميل ${customerName} بقيمة ${sent.total.toString()}.`,
+            href: `/app/invoices/${invoiceId}`,
+            entityType: "INVOICE",
+            entityId: invoiceId,
+          })),
+        tx,
+      );
+
       return sent;
     });
   }
@@ -591,9 +620,12 @@ export class InvoiceService {
       where: { id: invoiceId },
       select: {
         id: true,
+        factoryId: true,
+        number: true,
         status: true,
         total: true,
         amountPaid: true,
+        createdById: true,
         deletedAt: true,
       },
     });
@@ -625,6 +657,32 @@ export class InvoiceService {
         status: nextStatus,
       },
     });
+
+    // Notify on full payment — invoice creator + accountants.
+    if (nextStatus === "PAID") {
+      const recipients = new Set<string>();
+      if (invoice.createdById) recipients.add(invoice.createdById);
+      const accountants = await findFactoryUsersByRole(
+        invoice.factoryId,
+        ["ACCOUNTANT", "OWNER", "FACTORY_MANAGER"],
+        tx,
+      );
+      for (const a of accountants) recipients.add(a.id);
+      await emitNotifications(
+        Array.from(recipients).map((userId) => ({
+          factoryId: invoice.factoryId,
+          userId,
+          type: "INVOICE_PAID" as const,
+          dedupeKey: `INVOICE_PAID:${invoiceId}`,
+          title: `تم سداد الفاتورة ${invoice.number}`,
+          message: `تم سداد الفاتورة ${invoice.number} بالكامل بقيمة ${invoice.total.toString()}.`,
+          href: `/app/invoices/${invoiceId}`,
+          entityType: "INVOICE",
+          entityId: invoiceId,
+        })),
+        tx,
+      );
+    }
 
     return { status: nextStatus as InvoiceStatus, amountPaid: newAmountPaid };
   }

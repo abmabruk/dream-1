@@ -13,6 +13,10 @@ import {
 } from "@/lib/money";
 import { hasPermission } from "@/modules/auth/roles";
 import { InvoiceService } from "@/modules/invoices/invoice.service";
+import {
+  emitNotifications,
+  findFactoryUsersByRole,
+} from "@/modules/notifications/notification.emitter";
 
 import {
   PaymentRepository,
@@ -186,6 +190,32 @@ export class PaymentService {
           allocationCount: allocations.length,
         },
       });
+
+      // Notify accountants of incoming payments (skip refunds).
+      if (kind === "PAYMENT") {
+        const accountants = await findFactoryUsersByRole(
+          factoryId,
+          ["ACCOUNTANT", "OWNER", "FACTORY_MANAGER"],
+          tx,
+        );
+        await emitNotifications(
+          accountants
+            .filter((u) => u.id !== actor.userId)
+            .map((u) => ({
+              factoryId,
+              userId: u.id,
+              type: "PAYMENT_RECEIVED" as const,
+              dedupeKey: `PAYMENT_RECEIVED:${created.id}`,
+              title: `تم استلام دفعة من ${customer.name}`,
+              message: `تم تسجيل دفعة بقيمة ${amount.toString()} من ${customer.name}.`,
+              href: `/app/payments/${created.id}`,
+              entityType: "PAYMENT",
+              entityId: created.id,
+            })),
+          tx,
+        );
+      }
+
       return detail;
     });
   }

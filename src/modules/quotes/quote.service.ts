@@ -7,6 +7,7 @@ import { db, type PrismaTransaction } from "@/lib/db";
 import { HttpError } from "@/lib/http/http-error";
 import { computeTax, lineTotal, roundMoney, sumMoney } from "@/lib/money";
 import { hasPermission } from "@/modules/auth/roles";
+import { emitNotification } from "@/modules/notifications/notification.emitter";
 
 import {
   CreateQuoteInput,
@@ -384,6 +385,32 @@ export class QuoteService {
         },
       });
 
+      // Notify the quote creator (if known and not the same as actor).
+      const meta = await tx.quote.findUnique({
+        where: { id: quoteId },
+        select: {
+          createdById: true,
+          version: true,
+          order: { select: { code: true } },
+        },
+      });
+      if (meta?.createdById && meta.createdById !== actor.userId) {
+        await emitNotification(
+          {
+            factoryId,
+            userId: meta.createdById,
+            type: "QUOTE_APPROVED",
+            dedupeKey: `QUOTE_APPROVED:${quoteId}`,
+            title: `تم اعتماد عرض السعر #${meta.version}`,
+            message: `تم اعتماد عرض السعر #${meta.version} للطلب ${meta.order?.code ?? ""}.`,
+            href: `/app/orders/${existing.orderId}`,
+            entityType: "QUOTE",
+            entityId: quoteId,
+          },
+          tx,
+        );
+      }
+
       return approved;
     });
   }
@@ -414,6 +441,32 @@ export class QuoteService {
         entityId: quoteId,
         metadata: { version: existing.version, orderId: existing.orderId },
       });
+
+      const meta = await tx.quote.findUnique({
+        where: { id: quoteId },
+        select: {
+          createdById: true,
+          version: true,
+          order: { select: { code: true } },
+        },
+      });
+      if (meta?.createdById && meta.createdById !== actor.userId) {
+        await emitNotification(
+          {
+            factoryId,
+            userId: meta.createdById,
+            type: "QUOTE_REJECTED",
+            dedupeKey: `QUOTE_REJECTED:${quoteId}`,
+            title: `تم رفض عرض السعر #${meta.version}`,
+            message: `تم رفض عرض السعر #${meta.version} للطلب ${meta.order?.code ?? ""}.`,
+            href: `/app/orders/${existing.orderId}`,
+            entityType: "QUOTE",
+            entityId: quoteId,
+          },
+          tx,
+        );
+      }
+
       return rejected;
     });
   }
