@@ -1,0 +1,15 @@
+title = "Dream-1 gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives"
+paths = [
+  '''.env\.example''',
+  '''docs/.*\.md''',
+  '''prisma/seed\.mjs''',
+]
+regexes = [
+  '''dream12345''',
+]
