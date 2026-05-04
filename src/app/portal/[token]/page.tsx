@@ -8,6 +8,15 @@ import { PortalApprovalForm } from "./approval-form";
 
 const portalService = new PortalService();
 
+const ORDER_EVENT_LABELS_AR: Record<string, string> = {
+  CREATED: "إنشاء الطلب",
+  STATUS_CHANGED: "تغيير الحالة",
+  ASSIGNMENT_CREATED: "إسناد عامل",
+  ASSIGNMENT_STATUS_CHANGED: "تغيير حالة الإسناد",
+  PORTAL_SHARED: "مشاركة رابط البوابة",
+  PORTAL_APPROVED: "موافقة العميل",
+};
+
 function formatDate(value: string | null) {
   if (!value) {
     return "غير متاح";
@@ -76,31 +85,44 @@ export default async function PortalOrderPage({ params }: PageProps) {
           {detail.order.title}
         </h1>
         <p className="mt-3 max-w-3xl text-base leading-8 text-[var(--muted-foreground)]">
-          رؤية مباشرة للطلب {detail.order.code}. تعكس هذه الصفحة
-          الحالة الفعلية المخزّنة بواسطة {detail.factory.name}.
+          رؤية مباشرة للطلب {detail.order.code}. تعكس هذه الصفحة الحالة الفعلية
+          المخزّنة بواسطة {detail.factory.name}.
         </p>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">الحالة الحالية</p>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            الحالة الحالية
+          </p>
           <h2 className="mt-2 text-2xl font-semibold">
             {ORDER_STATUS_LABELS[detail.order.status]}
           </h2>
         </article>
         <article className="panel">
           <p className="text-sm text-[var(--muted-foreground)]">تاريخ الهدف</p>
-          <h2 className="mt-2 text-2xl font-semibold">{formatDate(detail.order.targetDate)}</h2>
-        </article>
-        <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">المبلغ المسعّر</p>
           <h2 className="mt-2 text-2xl font-semibold">
-            {formatCurrencyWithCode(detail.order.quotedAmount, detail.factory.currency)}
+            {formatDate(detail.order.targetDate)}
           </h2>
         </article>
         <article className="panel">
-          <p className="text-sm text-[var(--muted-foreground)]">تاريخ التسليم</p>
-          <h2 className="mt-2 text-2xl font-semibold">{formatDate(detail.order.deliveredAt)}</h2>
+          <p className="text-sm text-[var(--muted-foreground)]">
+            المبلغ المسعّر
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">
+            {formatCurrencyWithCode(
+              detail.order.quotedAmount,
+              detail.factory.currency,
+            )}
+          </h2>
+        </article>
+        <article className="panel">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            تاريخ التسليم
+          </p>
+          <h2 className="mt-2 text-2xl font-semibold">
+            {formatDate(detail.order.deliveredAt)}
+          </h2>
         </article>
       </section>
 
@@ -116,11 +138,17 @@ export default async function PortalOrderPage({ params }: PageProps) {
                 {detail.order.customer.name}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">جهة الاتصال:</span>{" "}
-                {detail.order.customer.phone || detail.order.customer.email || "لا تتوفر بيانات اتصال"}
+                <span className="text-[var(--muted-foreground)]">
+                  جهة الاتصال:
+                </span>{" "}
+                {detail.order.customer.phone ||
+                  detail.order.customer.email ||
+                  "لا تتوفر بيانات اتصال"}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">موافقة العميل:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">
+                  موافقة العميل:
+                </span>{" "}
                 {formatDate(detail.order.customerApprovedAt)}
               </div>
             </div>
@@ -137,15 +165,21 @@ export default async function PortalOrderPage({ params }: PageProps) {
             </p>
             <div className="mt-4 space-y-3 text-sm">
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">اسم البوابة:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">
+                  اسم البوابة:
+                </span>{" "}
                 {detail.factory.portalDisplayName || detail.factory.name}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">بريد الدعم:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">
+                  بريد الدعم:
+                </span>{" "}
                 {detail.factory.supportEmail || "غير متوفر"}
               </div>
               <div className="rounded-2xl border border-[var(--border)] bg-[var(--panel-strong)] px-4 py-3">
-                <span className="text-[var(--muted-foreground)]">هاتف الدعم:</span>{" "}
+                <span className="text-[var(--muted-foreground)]">
+                  هاتف الدعم:
+                </span>{" "}
                 {detail.factory.supportPhone || "غير متوفر"}
               </div>
             </div>
@@ -158,7 +192,10 @@ export default async function PortalOrderPage({ params }: PageProps) {
               </p>
               <div className="mt-4 flex items-center justify-between">
                 <p className="text-sm text-[var(--muted-foreground)]">
-                  عدد الفواتير: <span className="font-semibold text-[var(--foreground)]">{invoicesSummary.count}</span>
+                  عدد الفواتير:{" "}
+                  <span className="font-semibold text-[var(--foreground)]">
+                    {invoicesSummary.count}
+                  </span>
                 </p>
                 <Link
                   href={`/portal/${token}/invoices`}
@@ -236,7 +273,10 @@ export default async function PortalOrderPage({ params }: PageProps) {
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div>
-                        <p className="font-semibold">{{STATUS_CHANGED: "تغيير الحالة", ASSIGNMENT_CREATED: "إنشاء مهمة", ASSIGNMENT_UPDATED: "تحديث مهمة", PORTAL_ACCESS_CREATED: "إنشاء وصول بوابة", NOTE_ADDED: "إضافة ملاحظة", CREATED: "إنشاء"} [event.type] ?? event.type.replaceAll("_", " ")}</p>
+                        <p className="font-semibold">
+                          {ORDER_EVENT_LABELS_AR[event.type] ??
+                            event.type.replaceAll("_", " ")}
+                        </p>
                         <p className="mt-1 text-sm text-[var(--muted-foreground)]">
                           {formatDate(event.createdAt)}
                         </p>
