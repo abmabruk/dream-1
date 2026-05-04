@@ -5,11 +5,19 @@ import { useSearchParams } from "next/navigation";
 
 import { signInAction } from "./actions";
 import { initialSignInActionState as initialState } from "./state";
+import { TotpStep } from "./totp-step";
 
 export function SignInForm() {
-  const [state, formAction, pending] = useActionState(signInAction, initialState);
+  const [state, formAction, pending] = useActionState(
+    signInAction,
+    initialState,
+  );
   const searchParams = useSearchParams();
   const redirectParam = searchParams?.get("redirect") ?? "";
+
+  if (state.requires2fa) {
+    return <TotpStep redirectTo={state.redirect ?? redirectParam ?? null} />;
+  }
 
   return (
     <form action={formAction} className="mt-8 space-y-5">
@@ -52,7 +60,11 @@ export function SignInForm() {
         </p>
       )}
 
-      <button className="button-primary w-full disabled:opacity-60" disabled={pending} type="submit">
+      <button
+        className="button-primary w-full disabled:opacity-60"
+        disabled={pending}
+        type="submit"
+      >
         {pending ? "جاري تسجيل الدخول..." : "تسجيل الدخول"}
       </button>
     </form>

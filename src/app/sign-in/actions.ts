@@ -9,13 +9,18 @@ import {
 } from "@/lib/rate-limit";
 import { AuthService } from "@/modules/auth/auth.service";
 
-import type { SignInActionState } from "./state";
+import type { SignInActionState, Totp2faActionState } from "./state";
 
 const authService = new AuthService();
 
 function safeRedirectFromForm(value: string): string | null {
   if (!value) return null;
-  if (value.startsWith("/app") || value.startsWith("/worker")) return value;
+  if (
+    value.startsWith("/app") ||
+    value.startsWith("/worker") ||
+    value.startsWith("/portal")
+  )
+    return value;
   return null;
 }
 
@@ -24,7 +29,7 @@ function defaultLandingForRole(role: string): string {
     case "WORKER":
       return "/worker";
     case "CUSTOMER":
-      return "/forbidden";
+      return "/portal/dashboard";
     default:
       return "/app";
   }
@@ -32,12 +37,12 @@ function defaultLandingForRole(role: string): string {
 
 export async function signInAction(
   _previousState: SignInActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<SignInActionState> {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
   const requestedRedirect = safeRedirectFromForm(
-    String(formData.get("redirect") ?? "")
+    String(formData.get("redirect") ?? ""),
   );
 
   const rateKey = email.toLowerCase().trim();
@@ -59,6 +64,15 @@ export async function signInAction(
       return { error: result.message };
     }
 
+    if (result.requires2fa) {
+      // Don't clear attempts yet — 2FA still pending. Cookie carries challenge.
+      return {
+        error: null,
+        requires2fa: true,
+        redirect: requestedRedirect,
+      };
+    }
+
     clearSignInAttempts(rateKey);
     target = requestedRedirect ?? defaultLandingForRole(result.user.role);
   } catch {
@@ -68,6 +82,36 @@ export async function signInAction(
 
   if (target) redirect(target);
   return { error: null };
+}
+
+export async function totp2faVerifyAction(
+  _previousState: Totp2faActionState,
+  formData: FormData,
+): Promise<Totp2faActionState> {
+  const code = String(formData.get("code") ?? "");
+  const requestedRedirect = safeRedirectFromForm(
+    String(formData.get("redirect") ?? ""),
+  );
+
+  let target: string | null = null;
+
+  try {
+    const result = await authService.completeSignIn2fa(code);
+    if (!result.ok) {
+      return { error: result.message };
+    }
+    target = requestedRedirect ?? defaultLandingForRole(result.user.role);
+  } catch {
+    return { error: "تعذّر التحقق من الرمز." };
+  }
+
+  if (target) redirect(target);
+  return { error: null };
+}
+
+export async function totp2faCancelAction() {
+  await authService.cancelSignIn2fa();
+  redirect("/sign-in");
 }
 
 export async function signOutAction() {

@@ -27,7 +27,14 @@ export type AuditAction =
   | "INVOICE_VOIDED"
   | "PAYMENT_RECORDED"
   | "PAYMENT_DELETED"
-  | "PERMISSION_DENIED";
+  | "PERMISSION_DENIED"
+  | "AUTH_2FA_ENABLED"
+  | "AUTH_2FA_DISABLED"
+  | "AUTH_2FA_VERIFIED"
+  | "AUTH_2FA_FAILED"
+  | "AUTH_2FA_RECOVERY_USED"
+  | "CUSTOMER_INVITED"
+  | "CUSTOMER_INVITE_RESENT";
 
 export interface AuditEntry {
   factoryId?: string | null;

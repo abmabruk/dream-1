@@ -87,6 +87,13 @@ enum NotificationType {
   TASK_COMMENT
   STAGE_STARTED
   DEPOSIT_ATTESTED
+  QUOTE_APPROVED
+  QUOTE_REJECTED
+  QUOTE_EXPIRING_SOON
+  INVOICE_SENT
+  INVOICE_OVERDUE
+  INVOICE_PAID
+  PAYMENT_RECEIVED
 }
 
 enum ProjectStatus {
@@ -225,6 +232,10 @@ model User {
   phone                   String?
   role                    UserRole
   status                  UserStatus             @default(INVITED)
+  totpSecret              String?
+  totpEnabled             Boolean                @default(false)
+  totpRecoveryCodes       String[]               @default([])
+  totpEnabledAt           DateTime?
   createdAt               DateTime               @default(now())
   updatedAt               DateTime               @updatedAt
   factory                 Factory                @relation(fields: [factoryId], references: [id], onDelete: Cascade)
@@ -255,6 +266,7 @@ model User {
   invoicesCreated         Invoice[]              @relation("InvoiceCreatedBy")
   creditNotesCreated      CreditNote[]           @relation("CreditNoteCreatedBy")
   paymentsRecorded        Payment[]              @relation("PaymentRecordedBy")
+  customerProfile         Customer?              @relation("CustomerUser")
 
   @@index([factoryId, role])
 }
@@ -312,9 +324,11 @@ model Customer {
   taxNumber              String?
   address                String?
   notes                  String?
+  userId                 String?   @unique
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   factory                Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  user                   User?     @relation("CustomerUser", fields: [userId], references: [id], onDelete: SetNull)
   orders                 Order[]
   invoices               Invoice[]
   payments               Payment[]
