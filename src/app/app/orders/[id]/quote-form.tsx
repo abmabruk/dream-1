@@ -18,6 +18,7 @@
  * `QuoteLine` for the imported types.
  */
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { StatusPill, useToast } from "@/components/ui";
@@ -60,6 +61,8 @@ interface QuoteFormProps {
   canManageQuotes: boolean;
   canApproveQuotes: boolean;
   canCancelQuotes: boolean;
+  /** Allow generating an invoice from an APPROVED quote. */
+  canManageInvoices?: boolean;
   /** Fired after any state-changing action so the panel can refetch. */
   onChanged: () => void | Promise<void>;
   /** Fired after a soft-delete so the panel can clear selection. */
@@ -198,10 +201,12 @@ export function QuoteForm({
   canManageQuotes,
   canApproveQuotes,
   canCancelQuotes,
+  canManageInvoices = false,
   onChanged,
   onDeleted,
 }: QuoteFormProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [quote, setQuote] = useState<QuoteDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -389,6 +394,38 @@ export function QuoteForm({
     [quote, toast, load, onChanged],
   );
 
+  const handleGenerateInvoice = useCallback(async () => {
+    if (!quote) return;
+    const due = prompt(
+      "تاريخ الاستحقاق (YYYY-MM-DD) — اتركه فارغاً لاستخدام 30 يوماً:",
+      "",
+    );
+    if (due === null) return; // user cancelled
+    setBusy("invoice");
+    try {
+      const r = await fetch(
+        `/api/v1/quotes/${quote.id}/generate-invoice`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(due.trim() ? { dueDate: due.trim() } : {}),
+        },
+      );
+      const json = await r.json();
+      if (!r.ok || !json.ok) {
+        toast(json?.error?.message ?? "تعذّر إنشاء الفاتورة", "error");
+        return;
+      }
+      const newId = (json.data as { id: string }).id;
+      toast("تم إنشاء الفاتورة كمسودة", "success");
+      router.push(`/app/finance/invoices/${newId}`);
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "خطأ في الاتصال", "error");
+    } finally {
+      setBusy(null);
+    }
+  }, [quote, toast, router]);
+
   // ---------- Render ----------
 
   if (loading || !quote) {
@@ -468,6 +505,16 @@ export function QuoteForm({
               disabled={busy !== null}
             >
               {busy === "duplicate" ? "جاري النسخ…" : "نسخ كنسخة جديدة"}
+            </button>
+          ) : null}
+          {isApproved && canManageInvoices ? (
+            <button
+              type="button"
+              className="button-primary text-sm"
+              onClick={handleGenerateInvoice}
+              disabled={busy !== null}
+            >
+              {busy === "invoice" ? "جاري الإنشاء…" : "إنشاء فاتورة"}
             </button>
           ) : null}
           {isApproved && canCancelQuotes ? (

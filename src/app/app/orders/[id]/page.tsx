@@ -46,6 +46,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const canManageQuotes = hasPermission(session.role, "quotes:draft");
   const canApproveQuotes = hasPermission(session.role, "quotes:approve");
   const canCancelQuotes = hasPermission(session.role, "quotes:cancel");
+  const canManageInvoices = hasPermission(session.role, "invoices:manage");
 
   const [order, workers] = await Promise.all([
     orderService.getById(session.factoryId, id),
@@ -323,6 +324,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
           canManageQuotes={canManageQuotes}
           canApproveQuotes={canApproveQuotes}
           canCancelQuotes={canCancelQuotes}
+          canManageInvoices={canManageInvoices}
         />
       ) : null}
     </main>

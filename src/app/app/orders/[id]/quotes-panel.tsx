@@ -21,6 +21,7 @@ interface QuotesPanelProps {
   canManageQuotes: boolean;
   canApproveQuotes: boolean;
   canCancelQuotes: boolean;
+  canManageInvoices?: boolean;
 }
 
 export function QuotesPanel({
@@ -28,6 +29,7 @@ export function QuotesPanel({
   canManageQuotes,
   canApproveQuotes,
   canCancelQuotes,
+  canManageInvoices = false,
 }: QuotesPanelProps) {
   const { toast } = useToast();
   const [quotes, setQuotes] = useState<QuoteCardData[]>([]);
@@ -159,6 +161,7 @@ export function QuotesPanel({
                 canManageQuotes={canManageQuotes}
                 canApproveQuotes={canApproveQuotes}
                 canCancelQuotes={canCancelQuotes}
+                canManageInvoices={canManageInvoices}
                 onChanged={load}
                 onDeleted={handleDeleted}
               />

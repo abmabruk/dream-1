@@ -123,6 +123,11 @@ export default async function AppLayout({
               الماليات
             </Link>
           )}
+          {hasPermission(session.role, "invoices:view") && (
+            <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/finance/invoices">
+              الفواتير
+            </Link>
+          )}
 
           {/* Admin group: users / vendors / products / settings */}
           <hr className="my-3 border-0 border-t border-[var(--border)]" />
