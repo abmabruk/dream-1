@@ -18,7 +18,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { StatusPill, useToast } from "@/components/ui";
+import { BottomSheet, StatusPill, useToast } from "@/components/ui";
 import { formatDateAr, formatSAR } from "@/lib/format";
 import {
   CREDIT_NOTE_STATUS_LABELS_AR,
@@ -83,6 +83,11 @@ export function InvoiceDetailView({
   const [newLine, setNewLine] = useState<LineDraft>(EMPTY_LINE);
   const [showCreditForm, setShowCreditForm] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showVoidDialog, setShowVoidDialog] = useState(false);
+  const [voidReason, setVoidReason] = useState("");
+  const [voidError, setVoidError] = useState<string | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteLineId, setDeleteLineId] = useState<string | null>(null);
 
   const isDraft = invoice.status === "DRAFT";
   const isOpen =
@@ -98,10 +103,9 @@ export function InvoiceDetailView({
       });
       const json = await r.json();
       if (r.ok && json.ok) setInvoice(json.data as InvoiceDetail);
-      const r2 = await fetch(
-        `/api/v1/invoices/${invoice.id}/credit-notes`,
-        { cache: "no-store" },
-      );
+      const r2 = await fetch(`/api/v1/invoices/${invoice.id}/credit-notes`, {
+        cache: "no-store",
+      });
       const j2 = await r2.json();
       if (r2.ok && j2.ok) setCreditNotes(j2.data as CreditNoteListItem[]);
     } catch {
@@ -170,7 +174,7 @@ export function InvoiceDetailView({
   );
 
   const handleDelete = useCallback(async () => {
-    if (!confirm("هل تريد حذف هذه المسودة؟")) return;
+    setShowDeleteDialog(false);
     setBusy("delete");
     try {
       const r = await fetch(`/api/v1/invoices/${invoice.id}`, {
@@ -190,11 +194,17 @@ export function InvoiceDetailView({
     }
   }, [invoice.id, toast, router]);
 
-  const handleVoid = useCallback(async () => {
-    const reason = prompt("سبب الإلغاء:");
-    if (!reason || !reason.trim()) return;
-    await action("void", "الإلغاء", "void", { reason: reason.trim() });
-  }, [action]);
+  const handleVoidConfirm = useCallback(async () => {
+    const trimmed = voidReason.trim();
+    if (trimmed.length < 2) {
+      setVoidError("يرجى إدخال سبب لا يقل عن حرفين");
+      return;
+    }
+    setVoidError(null);
+    setShowVoidDialog(false);
+    setVoidReason("");
+    await action("void", "الإلغاء", "void", { reason: trimmed });
+  }, [action, voidReason]);
 
   const handleAddLine = useCallback(async () => {
     if (!newLine.description.trim()) {
@@ -255,7 +265,7 @@ export function InvoiceDetailView({
 
   const handleDeleteLine = useCallback(
     async (lineId: string) => {
-      if (!confirm("حذف هذا البند؟")) return;
+      setDeleteLineId(null);
       setBusy(`line-${lineId}`);
       try {
         const r = await fetch(
@@ -281,8 +291,8 @@ export function InvoiceDetailView({
 
   const showSnapshot = !isDraft;
   const buyerName = showSnapshot
-    ? invoice.buyerNameSnapshot ?? customer?.name ?? "—"
-    : customer?.name ?? "—";
+    ? (invoice.buyerNameSnapshot ?? customer?.name ?? "—")
+    : (customer?.name ?? "—");
 
   const dueDateValue = invoice.dueDate ? invoice.dueDate.slice(0, 10) : "";
 
@@ -326,7 +336,7 @@ export function InvoiceDetailView({
               <button
                 type="button"
                 className="button-danger text-sm"
-                onClick={handleDelete}
+                onClick={() => setShowDeleteDialog(true)}
                 disabled={busy !== null}
               >
                 {busy === "delete" ? "جاري الحذف…" : "حذف"}
@@ -336,7 +346,11 @@ export function InvoiceDetailView({
               <button
                 type="button"
                 className="button-danger text-sm"
-                onClick={handleVoid}
+                onClick={() => {
+                  setVoidReason("");
+                  setVoidError(null);
+                  setShowVoidDialog(true);
+                }}
                 disabled={busy !== null}
               >
                 {busy === "void" ? "جاري الإلغاء…" : "إلغاء"}
@@ -362,6 +376,20 @@ export function InvoiceDetailView({
                 إنشاء إشعار دائن
               </button>
             ) : null}
+            <span
+              aria-hidden
+              className="mx-1 hidden h-5 w-px sm:inline-block"
+              style={{ background: "var(--border)" }}
+            />
+            <button
+              type="button"
+              onClick={() =>
+                window.open(`/api/v1/invoices/${invoice.id}/pdf`, "_blank")
+              }
+              className="button-secondary text-sm"
+            >
+              طباعة / حفظ PDF
+            </button>
           </div>
         </div>
       </section>
@@ -436,7 +464,8 @@ export function InvoiceDetailView({
                               onBlur={(e) => {
                                 if (e.target.value !== String(line.quantity)) {
                                   void handleUpdateLine(line.id, {
-                                    quantity: e.target.value as unknown as string,
+                                    quantity: e.target
+                                      .value as unknown as string,
                                   });
                                 }
                               }}
@@ -457,7 +486,8 @@ export function InvoiceDetailView({
                               onBlur={(e) => {
                                 if (e.target.value !== String(line.unitPrice)) {
                                   void handleUpdateLine(line.id, {
-                                    unitPrice: e.target.value as unknown as string,
+                                    unitPrice: e.target
+                                      .value as unknown as string,
                                   });
                                 }
                               }}
@@ -479,7 +509,7 @@ export function InvoiceDetailView({
                                 height: "2rem",
                                 paddingInline: "0.75rem",
                               }}
-                              onClick={() => handleDeleteLine(line.id)}
+                              onClick={() => setDeleteLineId(line.id)}
                               disabled={busy !== null}
                             >
                               حذف
@@ -649,7 +679,9 @@ export function InvoiceDetailView({
             <h3 className="text-sm font-semibold">ملخّص التسعير</h3>
             <dl className="mt-4 space-y-3 text-sm">
               <div className="flex items-center justify-between">
-                <dt className="text-[var(--muted-foreground)]">المجموع الفرعي</dt>
+                <dt className="text-[var(--muted-foreground)]">
+                  المجموع الفرعي
+                </dt>
                 <dd className="font-semibold tabular-nums">
                   {formatSAR(invoice.subtotal)}
                 </dd>
@@ -781,6 +813,120 @@ export function InvoiceDetailView({
         onClose={() => setShowCreditForm(false)}
         onCreated={reload}
       />
+
+      <BottomSheet
+        open={showVoidDialog}
+        onClose={() => setShowVoidDialog(false)}
+        title="إلغاء الفاتورة"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            يرجى إدخال سبب إلغاء هذه الفاتورة. لا يمكن التراجع عن هذا الإجراء.
+          </p>
+          <div>
+            <label className="text-sm font-semibold">سبب الإلغاء</label>
+            <textarea
+              className="input mt-2 w-full"
+              rows={3}
+              value={voidReason}
+              onChange={(e) => {
+                setVoidReason(e.target.value);
+                if (voidError) setVoidError(null);
+              }}
+              placeholder="مثال: خطأ في البيانات، تم إصدار فاتورة بديلة"
+              autoFocus
+            />
+            {voidError ? (
+              <p
+                className="mt-2 text-sm"
+                style={{ color: "var(--tone-blocked-fg)" }}
+              >
+                {voidError}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              className="button-secondary text-sm"
+              onClick={() => setShowVoidDialog(false)}
+              disabled={busy !== null}
+            >
+              تراجع
+            </button>
+            <button
+              type="button"
+              className="button-danger text-sm"
+              onClick={handleVoidConfirm}
+              disabled={busy !== null}
+            >
+              تأكيد الإلغاء
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        title="حذف المسودة"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            هل تريد حذف هذه المسودة نهائياً؟ لا يمكن التراجع عن هذا الإجراء.
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              className="button-secondary text-sm"
+              onClick={() => setShowDeleteDialog(false)}
+              disabled={busy !== null}
+            >
+              تراجع
+            </button>
+            <button
+              type="button"
+              className="button-danger text-sm"
+              onClick={handleDelete}
+              disabled={busy !== null}
+            >
+              {busy === "delete" ? "جاري الحذف…" : "تأكيد الحذف"}
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={deleteLineId !== null}
+        onClose={() => setDeleteLineId(null)}
+        title="حذف بند"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-[var(--muted-foreground)]">
+            هل تريد حذف هذا البند من الفاتورة؟
+          </p>
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-2">
+            <button
+              type="button"
+              className="button-secondary text-sm"
+              onClick={() => setDeleteLineId(null)}
+              disabled={busy !== null}
+            >
+              تراجع
+            </button>
+            <button
+              type="button"
+              className="button-danger text-sm"
+              onClick={() => {
+                if (deleteLineId) void handleDeleteLine(deleteLineId);
+              }}
+              disabled={busy !== null}
+            >
+              تأكيد الحذف
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
 
       {customer ? (
         <RecordPaymentForm
