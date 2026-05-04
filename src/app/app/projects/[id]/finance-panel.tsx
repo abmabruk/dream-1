@@ -9,12 +9,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import {
-  EmptyState,
-  MetricCard,
-  StatusPill,
-  useToast,
-} from "@/components/ui";
+import { EmptyState, MetricCard, StatusPill, useToast } from "@/components/ui";
 import { toneVars } from "@/lib/status-tone";
 import { formatDateAr, formatSAR } from "@/lib/format";
 import {
@@ -85,8 +80,12 @@ export function FinancePanel({
   const [summary, setSummary] = useState<ProjectCostSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
-  const [availableQuoteLines, setAvailableQuoteLines] = useState<AvailableQuoteLine[]>([]);
-  const [availableVendors, setAvailableVendors] = useState<AvailableVendor[]>([]);
+  const [availableQuoteLines, setAvailableQuoteLines] = useState<
+    AvailableQuoteLine[]
+  >([]);
+  const [availableVendors, setAvailableVendors] = useState<AvailableVendor[]>(
+    [],
+  );
 
   // Fetch vendors for the AddCostDialog combobox. Silent on failure
   // (forbidden / endpoint not yet shipped) — the dialog still works
@@ -199,7 +198,10 @@ export function FinancePanel({
     const sumByLine = new Map<string, number>();
     for (const c of costs) {
       if (!c.quoteLineId) continue;
-      sumByLine.set(c.quoteLineId, (sumByLine.get(c.quoteLineId) ?? 0) + Number(c.amount));
+      sumByLine.set(
+        c.quoteLineId,
+        (sumByLine.get(c.quoteLineId) ?? 0) + Number(c.amount),
+      );
     }
     return sumByLine;
   }, [costs]);
@@ -208,10 +210,9 @@ export function FinancePanel({
     async (costId: string) => {
       if (!confirm("هل تريد فعلاً حذف هذه التكلفة؟")) return;
       try {
-        const r = await fetch(
-          `/api/v1/projects/${projectId}/costs/${costId}`,
-          { method: "DELETE" },
-        );
+        const r = await fetch(`/api/v1/projects/${projectId}/costs/${costId}`, {
+          method: "DELETE",
+        });
         const json = await r.json();
         if (!r.ok || !json.ok) {
           toast(json?.error?.message ?? "تعذّر الحذف", "error");
@@ -285,9 +286,14 @@ export function FinancePanel({
     let cycleText = "";
     if (inst && inst.startedAt) {
       const start = new Date(inst.startedAt).getTime();
-      const end = inst.completedAt ? new Date(inst.completedAt).getTime() : Date.now();
+      const end = inst.completedAt
+        ? new Date(inst.completedAt).getTime()
+        : Date.now();
       if (Number.isFinite(start) && Number.isFinite(end) && end >= start) {
-        const days = Math.max(1, Math.floor((end - start) / (24 * 60 * 60 * 1000)));
+        const days = Math.max(
+          1,
+          Math.floor((end - start) / (24 * 60 * 60 * 1000)),
+        );
         cycleText = ` ومتوسطها ${days} يوم`;
       }
     }
@@ -313,7 +319,13 @@ export function FinancePanel({
         <MetricCard
           label="الهامش المتوقع"
           value={fmtMoney(totals.margin)}
-          tone={totals.marginIsNegative ? "danger" : totals.margin ? "accent" : "muted"}
+          tone={
+            totals.marginIsNegative
+              ? "danger"
+              : totals.margin
+                ? "accent"
+                : "muted"
+          }
           sublabel={
             totals.marginIsNegative
               ? "تجاوزت التكاليف المبلغ المعروض"
@@ -526,35 +538,36 @@ export function FinancePanel({
                         {c.vendorNameSnapshot ?? c.vendorName ?? "—"}
                       </td>
                       <td className="py-2.5 text-xs text-[var(--muted-foreground)]">
-                        {c.quoteLineId && c.quoteLineDescription ? (
-                          (() => {
-                            const sell = c.quoteLineSellPrice ? Number(c.quoteLineSellPrice) : 0;
-                            const spent = perLineMargin.get(c.quoteLineId) ?? 0;
-                            const margin = sell - spent;
-                            const negative = margin < 0;
-                            return (
-                              <span className="inline-flex flex-col gap-0.5">
-                                <span className="text-[var(--foreground)]">
-                                  {`مرتبطة بـ ${c.quoteLineDescription}${c.quoteVersion ? ` في عرض السعر #v${c.quoteVersion}` : ""}`}
-                                </span>
-                                {sell > 0 ? (
-                                  <span
-                                    className="tabular-nums"
-                                    style={{
-                                      color: negative
-                                        ? "var(--tone-blocked-fg)"
-                                        : "var(--muted-foreground)",
-                                    }}
-                                  >
-                                    {`هامش البند: ${fmtMoney(margin.toFixed(2))} (من ${fmtMoney(sell.toFixed(2))})`}
+                        {c.quoteLineId && c.quoteLineDescription
+                          ? (() => {
+                              const sell = c.quoteLineSellPrice
+                                ? Number(c.quoteLineSellPrice)
+                                : 0;
+                              const spent =
+                                perLineMargin.get(c.quoteLineId) ?? 0;
+                              const margin = sell - spent;
+                              const negative = margin < 0;
+                              return (
+                                <span className="inline-flex flex-col gap-0.5">
+                                  <span className="text-[var(--foreground)]">
+                                    {`مرتبطة بـ ${c.quoteLineDescription}${c.quoteVersion ? ` في عرض السعر #v${c.quoteVersion}` : ""}`}
                                   </span>
-                                ) : null}
-                              </span>
-                            );
-                          })()
-                        ) : (
-                          "—"
-                        )}
+                                  {sell > 0 ? (
+                                    <span
+                                      className="tabular-nums"
+                                      style={{
+                                        color: negative
+                                          ? "var(--tone-blocked-fg)"
+                                          : "var(--muted-foreground)",
+                                      }}
+                                    >
+                                      {`هامش البند: ${fmtMoney(margin.toFixed(2))} (من ${fmtMoney(sell.toFixed(2))})`}
+                                    </span>
+                                  ) : null}
+                                </span>
+                              );
+                            })()
+                          : "—"}
                       </td>
                       <td className="py-2.5 text-end font-semibold tabular-nums">
                         {fmtMoney(c.amount)}
@@ -607,6 +620,7 @@ export function FinancePanel({
           locations={locations}
           availableQuoteLines={availableQuoteLines}
           availableVendors={availableVendors}
+          orderId={orderId}
           onClose={() => setShowAdd(false)}
           onCreated={async () => {
             setShowAdd(false);

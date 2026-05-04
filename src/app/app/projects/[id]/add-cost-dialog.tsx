@@ -52,6 +52,7 @@ interface AddCostDialogProps {
   locations?: { id: string; name: string; code: string | null }[];
   availableQuoteLines?: AvailableQuoteLine[];
   availableVendors?: AvailableVendor[];
+  orderId?: string | null;
   onClose: () => void;
   onCreated: () => void | Promise<void>;
 }
@@ -69,6 +70,7 @@ export function AddCostDialog({
   locations = [],
   availableQuoteLines = [],
   availableVendors = [],
+  orderId = null,
   onClose,
   onCreated,
 }: AddCostDialogProps) {
@@ -80,7 +82,8 @@ export function AddCostDialog({
   const [vendorId, setVendorId] = useState<string | null>(null);
   const [vendorQuery, setVendorQuery] = useState("");
   const [vendorSuggestOpen, setVendorSuggestOpen] = useState(false);
-  const [vendorList, setVendorList] = useState<AvailableVendor[]>(availableVendors);
+  const [vendorList, setVendorList] =
+    useState<AvailableVendor[]>(availableVendors);
   const [showQuickVendor, setShowQuickVendor] = useState(false);
   const [quickVendorName, setQuickVendorName] = useState("");
   const [quickVendorPhone, setQuickVendorPhone] = useState("");
@@ -92,17 +95,18 @@ export function AddCostDialog({
     setVendorList(availableVendors);
   }, [availableVendors]);
 
-  const vendorMatches = vendorQuery.trim().length === 0
-    ? vendorList.slice(0, 8)
-    : vendorList
-        .filter((v) => {
-          const q = vendorQuery.trim().toLowerCase();
-          return (
-            v.name.toLowerCase().includes(q) ||
-            (v.code ?? "").toLowerCase().includes(q)
-          );
-        })
-        .slice(0, 8);
+  const vendorMatches =
+    vendorQuery.trim().length === 0
+      ? vendorList.slice(0, 8)
+      : vendorList
+          .filter((v) => {
+            const q = vendorQuery.trim().toLowerCase();
+            return (
+              v.name.toLowerCase().includes(q) ||
+              (v.code ?? "").toLowerCase().includes(q)
+            );
+          })
+          .slice(0, 8);
 
   function pickVendor(v: AvailableVendor) {
     setVendorId(v.id);
@@ -136,13 +140,20 @@ export function AddCostDialog({
         setQuickVendorError(json?.error?.message ?? "تعذّر إنشاء المورد");
         return;
       }
-      const created = json.data as { id: string; name: string; code: string | null };
+      const created = json.data as {
+        id: string;
+        name: string;
+        code: string | null;
+      };
       const newVendor: AvailableVendor = {
         id: created.id,
         name: created.name,
         code: created.code ?? null,
       };
-      setVendorList((prev) => [newVendor, ...prev.filter((v) => v.id !== newVendor.id)]);
+      setVendorList((prev) => [
+        newVendor,
+        ...prev.filter((v) => v.id !== newVendor.id),
+      ]);
       pickVendor(newVendor);
       setShowQuickVendor(false);
       setQuickVendorName("");
@@ -287,7 +298,9 @@ export function AddCostDialog({
               }}
               onFocus={() => setVendorSuggestOpen(true)}
               onBlur={() => setTimeout(() => setVendorSuggestOpen(false), 150)}
-              placeholder={vendorList.length > 0 ? "ابحث أو اكتب اسم المورد" : "اسم المورد"}
+              placeholder={
+                vendorList.length > 0 ? "ابحث أو اكتب اسم المورد" : "اسم المورد"
+              }
               className="w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
               style={{ borderColor: "var(--border)" }}
             />
@@ -436,7 +449,8 @@ export function AddCostDialog({
             <option value="">— بدون موقع —</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.name}{l.code ? ` · ${l.code}` : ""}
+                {l.name}
+                {l.code ? ` · ${l.code}` : ""}
               </option>
             ))}
           </select>
@@ -463,7 +477,16 @@ export function AddCostDialog({
             })}
           </select>
         </label>
-      ) : null}
+      ) : (
+        <p
+          className="rounded-xl border border-dashed px-3 py-2 text-xs text-[var(--muted-foreground)]"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {orderId
+            ? "لا يوجد عرض سعر معتمد لهذا الطلب — أضف تكلفة بدون ربط"
+            : "هذا المشروع غير مرتبط بطلب — أضف تكلفة بدون ربط ببند عرض سعر"}
+        </p>
+      )}
 
       {error ? (
         <p className="text-sm text-[var(--tone-blocked-fg)]">{error}</p>
