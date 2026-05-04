@@ -49,6 +49,48 @@ export async function createInquiryAction(
   }
 }
 
+export async function convertInquiryAction(
+  _previousState: InquiryActionState,
+  formData: FormData
+): Promise<InquiryActionState> {
+  try {
+    const session = await requirePermission("crm:manage");
+    const inquiryId = String(formData.get("inquiryId") ?? "");
+
+    if (!inquiryId) {
+      return { error: "معرف الاستفسار مفقود.", success: null };
+    }
+
+    const result = await inquiryService.convertToCustomer(
+      session.factoryId,
+      { userId: session.userId, role: session.role },
+      inquiryId,
+      {
+        customerEmail: String(formData.get("customerEmail") ?? ""),
+        customerPhone: String(formData.get("customerPhone") ?? ""),
+        customerCity: String(formData.get("customerCity") ?? ""),
+        customerDistrict: String(formData.get("customerDistrict") ?? ""),
+        orderTitle: String(formData.get("orderTitle") ?? ""),
+        orderDescription: String(formData.get("orderDescription") ?? ""),
+        orderTargetDate: String(formData.get("orderTargetDate") ?? ""),
+      },
+    );
+
+    revalidateCrmViews();
+    revalidatePath("/app/orders");
+
+    return {
+      error: null,
+      success: `تم التحويل بنجاح. رمز الطلب: ${result.order.code}`,
+    };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "تعذّر تحويل الاستفسار.",
+      success: null,
+    };
+  }
+}
+
 export async function updateInquiryStageAction(
   _previousState: InquiryActionState,
   formData: FormData

@@ -36,9 +36,23 @@ export const inquiryListItemSchema = z.object({
   nextFollowUpAt: z.string().nullable(),
   notes: z.string().nullable(),
   assignedToName: z.string().nullable(),
+  convertedCustomerId: z.string().nullable(),
+  convertedOrderId: z.string().nullable(),
+  convertedAt: z.string().nullable(),
   createdAt: z.string(),
+});
+
+export const ConvertInquiryInput = z.object({
+  customerEmail: z.string().email().optional().or(z.literal("")),
+  customerPhone: z.string().min(8).optional().or(z.literal("")),
+  customerCity: z.string().optional().or(z.literal("")),
+  customerDistrict: z.string().optional().or(z.literal("")),
+  orderTitle: z.string().min(2).max(200),
+  orderDescription: z.string().max(2000).optional().or(z.literal("")),
+  orderTargetDate: z.string().optional().or(z.literal("")),
 });
 
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;
 export type UpdateInquiryStageInput = z.infer<typeof updateInquiryStageSchema>;
 export type InquiryListItem = z.infer<typeof inquiryListItemSchema>;
+export type ConvertInquiryInputType = z.infer<typeof ConvertInquiryInput>;

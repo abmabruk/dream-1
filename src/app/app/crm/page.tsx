@@ -11,6 +11,7 @@ import { UserService } from "@/modules/users/user.service";
 import { formatSAR, formatDateAr, formatNumber } from "@/lib/format";
 import { MetricCard } from "@/components/ui";
 
+import { ConvertInquiryForm } from "./convert-inquiry-form";
 import { CreateInquiryForm } from "./create-inquiry-form";
 import { UpdateInquiryStageForm } from "./update-inquiry-stage-form";
 
@@ -144,12 +145,22 @@ export default async function CrmPage() {
                       )}
 
                       {canManage && (
-                        <div className="mt-5 border-t border-[var(--border)] pt-5">
+                        <div className="mt-5 space-y-4 border-t border-[var(--border)] pt-5">
                           <UpdateInquiryStageForm
                             currentStage={inquiry.stage}
                             inquiryId={inquiry.id}
                             nextFollowUpAt={inquiry.nextFollowUpAt}
                           />
+                          {inquiry.stage !== "LOST" && (
+                            <ConvertInquiryForm
+                              alreadyConverted={Boolean(inquiry.convertedCustomerId)}
+                              defaultEmail={inquiry.email}
+                              defaultInterest={inquiry.interest}
+                              defaultPhone={inquiry.phone}
+                              inquiryId={inquiry.id}
+                              inquiryName={inquiry.name}
+                            />
+                          )}
                         </div>
                       )}
                     </div>
