@@ -31,6 +31,10 @@ export const PERMISSIONS = [
   "portal:view",
   "costs:view",
   "costs:manage",
+  "quotes:view",
+  "quotes:draft",
+  "quotes:approve",
+  "quotes:cancel",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -51,6 +55,8 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "orders:update",
     "payments:view",
     "portal:view",
+    "quotes:view",
+    "quotes:draft",
   ],
   SUPERVISOR: [
     "dashboard:view",
@@ -75,6 +81,7 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "payments:view",
     "costs:view",
     "costs:manage",
+    "quotes:view",
   ],
   CUSTOMER: ["portal:view"],
 };
