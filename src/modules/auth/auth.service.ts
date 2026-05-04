@@ -344,7 +344,11 @@ export class AuthService {
     return { ok: true };
   }
 
-  /** Disable 2FA — requires a valid current TOTP code (or recovery code). */
+  /**
+   * Disable 2FA — requires a fresh TOTP code from the authenticator app.
+   * Recovery codes are intentionally NOT accepted here so a leaked recovery
+   * code cannot disable 2FA on its own.
+   */
   async disable2fa(
     userId: string,
     code: string,
@@ -355,15 +359,15 @@ export class AuthService {
     }
 
     const cleaned = code.replace(/\s+/g, "");
-    let valid = false;
-    if (/^\d{6}$/.test(cleaned)) {
-      const secret = decryptSecret(user.totpSecret);
-      valid = verifyTotp(cleaned, secret);
-    } else {
-      valid = user.totpRecoveryCodes.some((stored) =>
-        verifyRecoveryCode(cleaned, stored),
-      );
+    if (!/^\d{6}$/.test(cleaned)) {
+      return {
+        ok: false,
+        message: "أدخل رمزاً مكوّناً من ٦ أرقام من تطبيق المصادقة.",
+      };
     }
+
+    const secret = decryptSecret(user.totpSecret);
+    const valid = verifyTotp(cleaned, secret);
 
     if (!valid) return { ok: false, message: "الرمز غير صحيح." };
 

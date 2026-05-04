@@ -119,6 +119,26 @@ export class PortalService {
     };
   }
 
+  async revokePortalAccess(
+    factoryId: string,
+    accessId: string,
+    actorUserId: string,
+  ) {
+    const revoked = await this.repository.revokeAccess(factoryId, accessId);
+    if (!revoked) return null;
+
+    await recordAudit({
+      factoryId,
+      actorUserId,
+      action: "PORTAL_LINK_REVOKED",
+      entityType: "PortalAccess",
+      entityId: accessId,
+      metadata: { orderId: revoked.orderId },
+    });
+
+    return { id: revoked.id, orderId: revoked.orderId };
+  }
+
   async getPortalOrder(token: string) {
     const payload = await verifyPortalToken(token);
     const detail = await this.repository.getByAccess(

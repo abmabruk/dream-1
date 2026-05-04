@@ -143,16 +143,17 @@ export function SecurityClient(props: {
         <div className="space-y-3">
           <p className="text-sm font-medium">تعطيل المصادقة الثنائية</p>
           <p className="text-sm text-[var(--muted-foreground)]">
-            أدخل رمزاً حالياً من تطبيق المصادقة (أو أحد رموز الاسترداد) لتأكيد
-            التعطيل.
+            أدخل رمزاً حالياً مكوّناً من ٦ أرقام من تطبيق المصادقة لتأكيد
+            التعطيل. لا تُقبل رموز الاسترداد هنا لأسباب أمنية.
           </p>
           <input
             className="input-field tracking-[0.4em] text-center font-mono"
             value={disableCode}
             onChange={(e) => setDisableCode(e.target.value)}
             placeholder="••••••"
-            inputMode="text"
+            inputMode="numeric"
             autoComplete="one-time-code"
+            maxLength={6}
           />
           {error && (
             <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

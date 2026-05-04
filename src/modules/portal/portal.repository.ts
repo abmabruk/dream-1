@@ -102,7 +102,10 @@ export class PortalRepository {
     });
   }
 
-  async getByAccess(accessId: string, orderId: string): Promise<PortalOrderDetail | null> {
+  async getByAccess(
+    accessId: string,
+    orderId: string,
+  ): Promise<PortalOrderDetail | null> {
     const access = await db.orderPortalAccess.findFirst({
       where: {
         id: accessId,
@@ -157,7 +160,8 @@ export class PortalRepository {
           ? Number(access.order.quotedAmount)
           : null,
         approvedAt: access.order.approvedAt?.toISOString() ?? null,
-        customerApprovedAt: access.order.customerApprovedAt?.toISOString() ?? null,
+        customerApprovedAt:
+          access.order.customerApprovedAt?.toISOString() ?? null,
         customerApprovalNote: access.order.customerApprovalNote,
         deliveredAt: access.order.deliveredAt?.toISOString() ?? null,
         customer: {
@@ -181,6 +185,15 @@ export class PortalRepository {
         })),
       },
     };
+  }
+
+  async revokeAccess(factoryId: string, accessId: string) {
+    const access = await db.orderPortalAccess.findFirst({
+      where: { id: accessId, factoryId },
+    });
+    if (!access) return null;
+    await db.orderPortalAccess.delete({ where: { id: accessId } });
+    return access;
   }
 
   async markViewed(accessId: string) {

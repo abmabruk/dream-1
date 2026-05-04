@@ -8,7 +8,8 @@ import { getSession } from "@/modules/auth/session";
 const authService = new AuthService();
 
 const bodySchema = z.object({
-  code: z.string().min(6).max(20),
+  // Disable requires a fresh 6-digit TOTP — recovery codes are not accepted.
+  code: z.string().regex(/^\s*\d{6}\s*$/, "Enter a 6-digit TOTP code."),
 });
 
 export async function POST(req: Request) {

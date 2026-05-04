@@ -228,6 +228,12 @@ export default async function AppLayout({
                 إعدادات المراحل
               </Link>
             )}
+            <Link
+              className="rounded-2xl px-4 py-3 hover:bg-black/4"
+              href="/app/settings/security"
+            >
+              الأمان (المصادقة الثنائية)
+            </Link>
 
             {/* Other portals */}
             <hr className="my-3 border-0 border-t border-[var(--border)]" />

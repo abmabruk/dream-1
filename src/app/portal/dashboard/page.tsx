@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { decToString } from "@/lib/money";
 import { ORDER_STATUS_LABELS } from "@/modules/orders/order-status";
-import { signOutAction } from "@/app/sign-in/actions";
+import { customerSignOutAction } from "@/app/portal/actions";
 import { requireCustomerPortalSession } from "@/modules/portal/customer-session";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +97,7 @@ export default async function CustomerDashboardPage() {
               هذه نظرة شاملة على طلباتك وفواتيرك.
             </p>
           </div>
-          <form action={signOutAction}>
+          <form action={customerSignOutAction}>
             <button
               type="submit"
               className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-medium hover:bg-[var(--panel-strong)]"
