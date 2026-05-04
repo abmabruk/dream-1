@@ -1,6 +1,9 @@
 import "server-only";
 
-import { Prisma, type CreditNoteStatus as PrismaCreditNoteStatus } from "@prisma/client";
+import {
+  Prisma,
+  type CreditNoteStatus as PrismaCreditNoteStatus,
+} from "@prisma/client";
 
 import { db, type PrismaTransaction } from "@/lib/db";
 import { decToString } from "@/lib/money";
@@ -147,8 +150,11 @@ export class CreditNoteRepository {
     });
   }
 
-  async acquireNumberLock(tx: PrismaTransaction, factoryId: string): Promise<void> {
-    await tx.$queryRawUnsafe(
+  async acquireNumberLock(
+    tx: PrismaTransaction,
+    factoryId: string,
+  ): Promise<void> {
+    await tx.$executeRawUnsafe(
       `SELECT pg_advisory_xact_lock(hashtext($1))`,
       `credit_note_seq:${factoryId}`,
     );

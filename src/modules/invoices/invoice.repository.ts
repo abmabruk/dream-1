@@ -1,6 +1,9 @@
 import "server-only";
 
-import { Prisma, type InvoiceStatus as PrismaInvoiceStatus } from "@prisma/client";
+import {
+  Prisma,
+  type InvoiceStatus as PrismaInvoiceStatus,
+} from "@prisma/client";
 
 import { db, type PrismaTransaction } from "@/lib/db";
 import { decToString } from "@/lib/money";
@@ -162,7 +165,10 @@ export class InvoiceRepository {
     return rows.map(mapListItem);
   }
 
-  async getById(factoryId: string, invoiceId: string): Promise<InvoiceDetail | null> {
+  async getById(
+    factoryId: string,
+    invoiceId: string,
+  ): Promise<InvoiceDetail | null> {
     const row = await db.invoice.findFirst({
       where: { id: invoiceId, factoryId, deletedAt: null },
       include: DEFAULT_INCLUDE,
@@ -242,7 +248,10 @@ export class InvoiceRepository {
   ) {
     return tx.quote.findFirst({
       where: { id: quoteId, factoryId, deletedAt: null },
-      include: { lines: true, order: { select: { id: true, customerId: true } } },
+      include: {
+        lines: true,
+        order: { select: { id: true, customerId: true } },
+      },
     });
   }
 
@@ -250,8 +259,11 @@ export class InvoiceRepository {
    * Acquires a Postgres advisory lock scoped to the current transaction so
    * sequential invoice numbers cannot collide across concurrent transactions.
    */
-  async acquireNumberLock(tx: PrismaTransaction, factoryId: string): Promise<void> {
-    await tx.$queryRawUnsafe(
+  async acquireNumberLock(
+    tx: PrismaTransaction,
+    factoryId: string,
+  ): Promise<void> {
+    await tx.$executeRawUnsafe(
       `SELECT pg_advisory_xact_lock(hashtext($1))`,
       `invoice_seq:${factoryId}`,
     );
@@ -326,7 +338,15 @@ export class InvoiceRepository {
     args: {
       header: Pick<
         InvoiceHeaderWritable,
-        "taxRate" | "taxInclusive" | "subtotal" | "discountAmount" | "taxAmount" | "total" | "dueDate" | "notes" | "internalNotes"
+        | "taxRate"
+        | "taxInclusive"
+        | "subtotal"
+        | "discountAmount"
+        | "taxAmount"
+        | "total"
+        | "dueDate"
+        | "notes"
+        | "internalNotes"
       >;
       replaceLines?: InvoiceLineWritable[];
     },
@@ -370,7 +390,11 @@ export class InvoiceRepository {
   async updateTotals(
     tx: PrismaTransaction,
     invoiceId: string,
-    totals: { subtotal: Prisma.Decimal; taxAmount: Prisma.Decimal; total: Prisma.Decimal },
+    totals: {
+      subtotal: Prisma.Decimal;
+      taxAmount: Prisma.Decimal;
+      total: Prisma.Decimal;
+    },
   ): Promise<InvoiceDetail> {
     const updated = await tx.invoice.update({
       where: { id: invoiceId },
