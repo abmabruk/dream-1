@@ -204,6 +204,7 @@ model Factory {
   stages ProjectStage[]
   stageInstances ProjectStageInstance[]
   locations Location[]
+  auditLogs AuditLog[]
 }
 
 model User {
@@ -237,6 +238,7 @@ model User {
   uploadedTaskAttachments TaskAttachment[] @relation("TaskAttachmentUploadedBy")
   authoredTaskComments TaskComment[] @relation("TaskCommentAuthor")
   stageInstancesOwned ProjectStageInstance[] @relation("StageInstanceOwner")
+  auditLogsActed AuditLog[] @relation("AuditLogActor")
 
   @@index([factoryId, role])
 }
@@ -669,5 +671,34 @@ model Location {
   costs       ProjectCost[]
 
   @@index([factoryId, projectId, sortOrder])
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
+model AuditLog {
+  id              String       @id @default(cuid())
+  factoryId       String?
+  actorUserId     String?
+  actorRoleSnapshot String?
+  action          String
+  entityType      String?
+  entityId        String?
+  outcome         AuditOutcome @default(SUCCESS)
+  ipAddress       String?
+  userAgent       String?
+  requestId       String?
+  metadata        Json?
+  createdAt       DateTime     @default(now())
+
+  factory   Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  actor     User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, createdAt])
+  @@index([factoryId, action, createdAt])
+  @@index([factoryId, entityType, entityId])
+  @@index([actorUserId, createdAt])
 }
 
