@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 export const INVOICE_STATUS_VALUES = [
   "DRAFT",
   "SENT",
@@ -50,13 +52,15 @@ export type InvoiceLineInputType = z.infer<typeof InvoiceLineInput>;
 // ─────────────────────────────────────────────
 export const CreateInvoiceInput = z.object({
   customerId: z.string().min(1),
-  orderId: z.string().min(1).nullable().optional(),
-  quoteId: z.string().min(1).nullable().optional(),
+  orderId: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  quoteId: emptyStringToUndefined(z.string().min(1).nullable().optional()),
   taxRate: z.coerce.number().min(0).max(100).optional(),
   taxInclusive: z.boolean().optional(),
-  dueDate: z.string().min(1).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  internalNotes: z.string().max(2000).nullable().optional(),
+  dueDate: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
+  internalNotes: emptyStringToUndefined(
+    z.string().max(2000).nullable().optional(),
+  ),
   discountAmount: z.coerce.number().nonnegative().max(99999999.99).optional(),
   lines: z.array(InvoiceLineInput).default([]),
 });
@@ -65,12 +69,14 @@ export type CreateInvoiceInputType = z.infer<typeof CreateInvoiceInput>;
 export const UpdateInvoiceInput = z.object({
   taxRate: z.coerce.number().min(0).max(100).optional(),
   taxInclusive: z.boolean().optional(),
-  dueDate: z.string().min(1).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  internalNotes: z.string().max(2000).nullable().optional(),
+  dueDate: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
+  internalNotes: emptyStringToUndefined(
+    z.string().max(2000).nullable().optional(),
+  ),
   discountAmount: z.coerce.number().nonnegative().max(99999999.99).optional(),
   lines: z.array(InvoiceLineInput).optional(),
-  expectedUpdatedAt: z.string().min(1).optional(),
+  expectedUpdatedAt: emptyStringToUndefined(z.string().min(1).optional()),
 });
 export type UpdateInvoiceInputType = z.infer<typeof UpdateInvoiceInput>;
 
