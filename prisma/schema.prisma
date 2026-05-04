@@ -210,6 +210,7 @@ model Factory {
   invoices          Invoice[]
   creditNotes       CreditNote[]
   payments          Payment[]
+  auditLogs         AuditLog[]
   taxNumber         String?
   address           String?
 }
@@ -253,6 +254,7 @@ model User {
   invoicesCreated         Invoice[]              @relation("InvoiceCreatedBy")
   creditNotesCreated      CreditNote[]           @relation("CreditNoteCreatedBy")
   paymentsRecorded        Payment[]              @relation("PaymentRecordedBy")
+  auditLogsActed          AuditLog[]             @relation("AuditLogActor")
 
   @@index([factoryId, role])
 }
@@ -1116,4 +1118,33 @@ model PaymentAllocation {
   @@unique([paymentId, invoiceId])
   @@index([invoiceId])
   @@index([paymentId])
+}
+
+enum AuditOutcome {
+  SUCCESS
+  FAILURE
+}
+
+model AuditLog {
+  id                String       @id @default(cuid())
+  factoryId         String?
+  actorUserId       String?
+  actorRoleSnapshot String?
+  action            String
+  entityType        String?
+  entityId          String?
+  outcome           AuditOutcome @default(SUCCESS)
+  ipAddress         String?
+  userAgent         String?
+  requestId         String?
+  metadata          Json?
+  createdAt         DateTime     @default(now())
+
+  factory Factory? @relation(fields: [factoryId], references: [id], onDelete: SetNull)
+  actor   User?    @relation("AuditLogActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([factoryId, createdAt])
+  @@index([factoryId, action, createdAt])
+  @@index([factoryId, entityType, entityId])
+  @@index([actorUserId, createdAt])
 }
