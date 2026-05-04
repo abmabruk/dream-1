@@ -2,13 +2,10 @@ import "server-only";
 
 import type { UserRole } from "@prisma/client";
 
+import { recordAudit } from "@/lib/audit";
 import { HttpError } from "@/lib/http/http-error";
 import { hasPermission } from "@/modules/auth/roles";
-import {
-  CostInput,
-  CostCategoryEnum,
-  type CostCategory,
-} from "./cost.schemas";
+import { CostInput, CostCategoryEnum, type CostCategory } from "./cost.schemas";
 import { CostRepository } from "./cost.repository";
 
 export class CostService {
@@ -33,7 +30,25 @@ export class CostService {
   ) {
     this.assertManage(actor.role);
     const parsed = CostInput.parse(input);
-    return this.repository.create(factoryId, actor.userId, parsed);
+    const created = await this.repository.create(
+      factoryId,
+      actor.userId,
+      parsed,
+    );
+    await recordAudit({
+      factoryId,
+      actorUserId: actor.userId,
+      actorRoleSnapshot: actor.role,
+      action: "COST_CREATED",
+      entityType: "Cost",
+      entityId: created.id,
+      metadata: {
+        category: parsed.category,
+        amount: String(parsed.amount),
+        projectId: parsed.projectId ?? null,
+      },
+    });
+    return created;
   }
 
   async deleteById(
@@ -42,14 +57,23 @@ export class CostService {
     costId: string,
   ) {
     this.assertManage(actor.role);
-    return this.repository.deleteById(factoryId, actor.userId, costId);
+    const result = await this.repository.deleteById(
+      factoryId,
+      actor.userId,
+      costId,
+    );
+    await recordAudit({
+      factoryId,
+      actorUserId: actor.userId,
+      actorRoleSnapshot: actor.role,
+      action: "COST_DELETED",
+      entityType: "Cost",
+      entityId: costId,
+    });
+    return result;
   }
 
-  async listByProject(
-    factoryId: string,
-    role: UserRole,
-    projectId: string,
-  ) {
+  async listByProject(factoryId: string, role: UserRole, projectId: string) {
     this.assertView(role);
     return this.repository.listByProject(factoryId, projectId);
   }
@@ -63,11 +87,7 @@ export class CostService {
     return this.repository.listByFactory(factoryId, filters);
   }
 
-  async summaryByProject(
-    factoryId: string,
-    role: UserRole,
-    projectId: string,
-  ) {
+  async summaryByProject(factoryId: string, role: UserRole, projectId: string) {
     this.assertView(role);
     return this.repository.summaryByProject(factoryId, projectId);
   }
@@ -81,7 +101,9 @@ export class CostService {
     return this.repository.summaryByFactory(factoryId, filters);
   }
 
-  parseCategoriesParam(input: string | null | undefined): CostCategory[] | undefined {
+  parseCategoriesParam(
+    input: string | null | undefined,
+  ): CostCategory[] | undefined {
     if (!input) return undefined;
     const parts = input
       .split(",")

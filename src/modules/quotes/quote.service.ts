@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma, type UserRole } from "@prisma/client";
 
+import { recordAudit } from "@/lib/audit";
 import { db, type PrismaTransaction } from "@/lib/db";
 import { HttpError } from "@/lib/http/http-error";
 import { computeTax, lineTotal, roundMoney, sumMoney } from "@/lib/money";
@@ -92,7 +93,10 @@ export class QuoteService {
     }
   }
 
-  private assertOptimistic(quote: { updatedAt: Date }, expected: string | undefined) {
+  private assertOptimistic(
+    quote: { updatedAt: Date },
+    expected: string | undefined,
+  ) {
     if (!expected) return;
     if (quote.updatedAt.toISOString() !== expected) {
       throw new HttpError(
@@ -141,16 +145,25 @@ export class QuoteService {
     const parsed = CreateQuoteInput.parse(input);
 
     return db.$transaction(async (tx) => {
-      const order = await this.repository.findOrder(tx, factoryId, parsed.orderId);
+      const order = await this.repository.findOrder(
+        tx,
+        factoryId,
+        parsed.orderId,
+      );
       if (!order) {
         throw new HttpError(404, "الطلب غير موجود.");
       }
 
-      const version = await this.repository.nextVersionForOrder(tx, factoryId, parsed.orderId);
+      const version = await this.repository.nextVersionForOrder(
+        tx,
+        factoryId,
+        parsed.orderId,
+      );
 
-      const taxRate = parsed.taxRate !== undefined
-        ? new Prisma.Decimal(parsed.taxRate)
-        : DEFAULT_TAX_RATE;
+      const taxRate =
+        parsed.taxRate !== undefined
+          ? new Prisma.Decimal(parsed.taxRate)
+          : DEFAULT_TAX_RATE;
       const taxInclusive = parsed.taxInclusive ?? false;
       const discountAmount = roundMoney(parsed.discountAmount ?? 0);
 
@@ -206,37 +219,43 @@ export class QuoteService {
       this.assertDraftOnly(existing);
       this.assertOptimistic(existing, parsed.expectedUpdatedAt);
 
-      const taxRate = parsed.taxRate !== undefined
-        ? new Prisma.Decimal(parsed.taxRate)
-        : existing.taxRate;
+      const taxRate =
+        parsed.taxRate !== undefined
+          ? new Prisma.Decimal(parsed.taxRate)
+          : existing.taxRate;
       const taxInclusive = parsed.taxInclusive ?? existing.taxInclusive;
-      const discountAmount = parsed.discountAmount !== undefined
-        ? roundMoney(parsed.discountAmount)
-        : existing.discountAmount;
-      const discountReason = parsed.discountReason !== undefined
-        ? parsed.discountReason
-        : existing.discountReason;
-      const validUntil = parsed.validUntil !== undefined
-        ? parsed.validUntil
-          ? new Date(parsed.validUntil)
-          : null
-        : existing.validUntil;
+      const discountAmount =
+        parsed.discountAmount !== undefined
+          ? roundMoney(parsed.discountAmount)
+          : existing.discountAmount;
+      const discountReason =
+        parsed.discountReason !== undefined
+          ? parsed.discountReason
+          : existing.discountReason;
+      const validUntil =
+        parsed.validUntil !== undefined
+          ? parsed.validUntil
+            ? new Date(parsed.validUntil)
+            : null
+          : existing.validUntil;
       const notes = parsed.notes !== undefined ? parsed.notes : existing.notes;
-      const internalNotes = parsed.internalNotes !== undefined
-        ? parsed.internalNotes
-        : existing.internalNotes;
+      const internalNotes =
+        parsed.internalNotes !== undefined
+          ? parsed.internalNotes
+          : existing.internalNotes;
 
-      const writableLines = parsed.lines !== undefined
-        ? this.buildWritableLines(parsed.lines)
-        : existing.lines.map((l) => ({
-            description: l.description,
-            productId: l.productId,
-            sku: l.sku,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            lineTotal: l.lineTotal,
-            sortOrder: l.sortOrder,
-          }));
+      const writableLines =
+        parsed.lines !== undefined
+          ? this.buildWritableLines(parsed.lines)
+          : existing.lines.map((l) => ({
+              description: l.description,
+              productId: l.productId,
+              sku: l.sku,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              lineTotal: l.lineTotal,
+              sortOrder: l.sortOrder,
+            }));
 
       const totals = this.computeTotals({
         lines: writableLines,
@@ -269,7 +288,11 @@ export class QuoteService {
   // State machine
   // ---------------------------------------------------------------------------
 
-  async send(factoryId: string, actor: Actor, quoteId: string): Promise<QuoteDetail> {
+  async send(
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ): Promise<QuoteDetail> {
     this.assertDraft(actor.role);
     return db.$transaction(async (tx) => {
       const existing = (await this.repository.getRawById(
@@ -284,13 +307,27 @@ export class QuoteService {
       if (existing.lines.length === 0) {
         throw new HttpError(409, "لا يمكن إرسال عرض سعر بدون بنود.");
       }
-      return this.repository.setStatus(tx, quoteId, "SENT", {
+      const sent = await this.repository.setStatus(tx, quoteId, "SENT", {
         sentToCustomerAt: new Date(),
       });
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "QUOTE_SENT",
+        entityType: "Quote",
+        entityId: quoteId,
+        metadata: { version: existing.version, total: sent.total.toString() },
+      });
+      return sent;
     });
   }
 
-  async approve(factoryId: string, actor: Actor, quoteId: string): Promise<QuoteDetail> {
+  async approve(
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ): Promise<QuoteDetail> {
     this.assertApprove(actor.role);
     return db.$transaction(async (tx) => {
       const existing = (await this.repository.getRawById(
@@ -315,10 +352,15 @@ export class QuoteService {
       );
 
       // 2. Approve this quote.
-      const approved = await this.repository.setStatus(tx, quoteId, "APPROVED", {
-        approvedAt: new Date(),
-        approvedById: actor.userId,
-      });
+      const approved = await this.repository.setStatus(
+        tx,
+        quoteId,
+        "APPROVED",
+        {
+          approvedAt: new Date(),
+          approvedById: actor.userId,
+        },
+      );
 
       // 3. Mirror total onto the Order.
       await this.repository.setOrderQuotedAmount(
@@ -328,11 +370,29 @@ export class QuoteService {
         new Prisma.Decimal(approved.total),
       );
 
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "QUOTE_APPROVED",
+        entityType: "Quote",
+        entityId: quoteId,
+        metadata: {
+          version: existing.version,
+          orderId: existing.orderId,
+          total: approved.total.toString(),
+        },
+      });
+
       return approved;
     });
   }
 
-  async reject(factoryId: string, actor: Actor, quoteId: string): Promise<QuoteDetail> {
+  async reject(
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ): Promise<QuoteDetail> {
     this.assertApprove(actor.role);
     return db.$transaction(async (tx) => {
       const existing = (await this.repository.getRawById(
@@ -344,11 +404,25 @@ export class QuoteService {
       if (existing.status !== "DRAFT" && existing.status !== "SENT") {
         throw new HttpError(409, "حالة غير صالحة للعملية");
       }
-      return this.repository.setStatus(tx, quoteId, "REJECTED");
+      const rejected = await this.repository.setStatus(tx, quoteId, "REJECTED");
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "QUOTE_REJECTED",
+        entityType: "Quote",
+        entityId: quoteId,
+        metadata: { version: existing.version, orderId: existing.orderId },
+      });
+      return rejected;
     });
   }
 
-  async cancel(factoryId: string, actor: Actor, quoteId: string): Promise<QuoteDetail> {
+  async cancel(
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ): Promise<QuoteDetail> {
     this.assertCancel(actor.role);
     return db.$transaction(async (tx) => {
       const existing = (await this.repository.getRawById(
@@ -358,27 +432,49 @@ export class QuoteService {
       )) as RawQuote | null;
       if (!existing) throw new HttpError(404, "عرض السعر غير موجود.");
       if (
-        existing.status !== "DRAFT"
-        && existing.status !== "SENT"
-        && existing.status !== "APPROVED"
+        existing.status !== "DRAFT" &&
+        existing.status !== "SENT" &&
+        existing.status !== "APPROVED"
       ) {
         throw new HttpError(409, "حالة غير صالحة للعملية");
       }
 
       // If the cancelled quote was the approved one, clear Order.quotedAmount.
       const wasApproved = existing.status === "APPROVED";
-      const cancelled = await this.repository.setStatus(tx, quoteId, "CANCELLED");
+      const cancelled = await this.repository.setStatus(
+        tx,
+        quoteId,
+        "CANCELLED",
+      );
       if (wasApproved) {
         await tx.order.updateMany({
           where: { id: existing.orderId, factoryId },
           data: { quotedAmount: null },
         });
       }
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "QUOTE_CANCELLED",
+        entityType: "Quote",
+        entityId: quoteId,
+        metadata: {
+          version: existing.version,
+          orderId: existing.orderId,
+          previousStatus: existing.status,
+          wasApproved,
+        },
+      });
       return cancelled;
     });
   }
 
-  async duplicate(factoryId: string, actor: Actor, quoteId: string): Promise<QuoteDetail> {
+  async duplicate(
+    factoryId: string,
+    actor: Actor,
+    quoteId: string,
+  ): Promise<QuoteDetail> {
     this.assertDraft(actor.role);
     return db.$transaction(async (tx) => {
       const existing = (await this.repository.getRawById(
@@ -451,9 +547,9 @@ export class QuoteService {
       )) as RawQuote | null;
       if (!existing) throw new HttpError(404, "عرض السعر غير موجود.");
       if (
-        existing.status !== "DRAFT"
-        && existing.status !== "REJECTED"
-        && existing.status !== "CANCELLED"
+        existing.status !== "DRAFT" &&
+        existing.status !== "REJECTED" &&
+        existing.status !== "CANCELLED"
       ) {
         throw new HttpError(409, "لا يمكن حذف عرض سعر معتمد أو مُرسَل.");
       }
@@ -514,7 +610,13 @@ export class QuoteService {
       }
       const sortOrder = parsed.sortOrder ?? currentLine.sortOrder;
       const writable = this.buildWritableLine(parsed, sortOrder);
-      await this.repository.updateLine(tx, factoryId, quoteId, lineId, writable);
+      await this.repository.updateLine(
+        tx,
+        factoryId,
+        quoteId,
+        lineId,
+        writable,
+      );
       await this.recomputeAndPersist(tx, factoryId, quoteId);
       return this.requireById(tx, factoryId, quoteId);
     });
@@ -559,12 +661,18 @@ export class QuoteService {
       this.assertDraftOnly(existing);
 
       const existingIds = new Set(existing.lines.map((l) => l.id));
-      const matches = orderedLineIds.length === existing.lines.length
-        && orderedLineIds.every((id) => existingIds.has(id));
+      const matches =
+        orderedLineIds.length === existing.lines.length &&
+        orderedLineIds.every((id) => existingIds.has(id));
       if (!matches) {
         throw new HttpError(400, "قائمة البنود غير متطابقة مع البنود الحالية.");
       }
-      await this.repository.setLineSortOrders(tx, factoryId, quoteId, orderedLineIds);
+      await this.repository.setLineSortOrders(
+        tx,
+        factoryId,
+        quoteId,
+        orderedLineIds,
+      );
       return this.requireById(tx, factoryId, quoteId);
     });
   }
@@ -590,7 +698,9 @@ export class QuoteService {
     };
   }
 
-  private buildWritableLines(inputs: QuoteLineInputType[]): QuoteLineWritable[] {
+  private buildWritableLines(
+    inputs: QuoteLineInputType[],
+  ): QuoteLineWritable[] {
     return inputs.map((line, index) =>
       this.buildWritableLine(line, line.sortOrder ?? index),
     );
@@ -605,7 +715,11 @@ export class QuoteService {
     discountAmount: Prisma.Decimal;
     taxRate: Prisma.Decimal;
     taxInclusive: boolean;
-  }): { subtotal: Prisma.Decimal; taxAmount: Prisma.Decimal; total: Prisma.Decimal } {
+  }): {
+    subtotal: Prisma.Decimal;
+    taxAmount: Prisma.Decimal;
+    total: Prisma.Decimal;
+  } {
     const linesSum = sumMoney(args.lines.map((l) => l.lineTotal));
     // Subtotal = sum(line totals) - discount, floored at 0 to prevent negatives.
     let preTax = roundMoney(linesSum.minus(args.discountAmount));

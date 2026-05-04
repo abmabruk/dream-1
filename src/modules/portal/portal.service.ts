@@ -1,11 +1,10 @@
 import "server-only";
 
+import { recordAudit } from "@/lib/audit";
 import { db } from "@/lib/db";
 import { decToString } from "@/lib/money";
 import { env } from "@/lib/env";
-import {
-  type InvoiceStatus,
-} from "@/modules/invoices/invoice.schemas";
+import { type InvoiceStatus } from "@/modules/invoices/invoice.schemas";
 
 import { PortalRepository } from "./portal.repository";
 import { signPortalToken, verifyPortalToken } from "./portal-token";
@@ -88,12 +87,29 @@ export class PortalService {
     };
   }
 
-  async createStaffPortalAccess(factoryId: string, orderId: string, sharedById: string) {
-    const access = await this.repository.upsertAccess(factoryId, orderId, sharedById);
+  async createStaffPortalAccess(
+    factoryId: string,
+    orderId: string,
+    sharedById: string,
+  ) {
+    const access = await this.repository.upsertAccess(
+      factoryId,
+      orderId,
+      sharedById,
+    );
 
     if (!access) {
       throw new Error("Order not found in this factory.");
     }
+
+    await recordAudit({
+      factoryId,
+      actorUserId: sharedById,
+      action: "PORTAL_LINK_CREATED",
+      entityType: "PortalAccess",
+      entityId: access.id,
+      metadata: { orderId },
+    });
 
     return {
       id: access.id,
@@ -105,7 +121,10 @@ export class PortalService {
 
   async getPortalOrder(token: string) {
     const payload = await verifyPortalToken(token);
-    const detail = await this.repository.getByAccess(payload.accessId, payload.orderId);
+    const detail = await this.repository.getByAccess(
+      payload.accessId,
+      payload.orderId,
+    );
 
     if (!detail) {
       return null;
@@ -124,7 +143,7 @@ export class PortalService {
             "ASSIGNMENT_STATUS_CHANGED",
             "PORTAL_SHARED",
             "PORTAL_APPROVED",
-          ].includes(event.type)
+          ].includes(event.type),
         ),
       },
     };
@@ -132,7 +151,10 @@ export class PortalService {
 
   async approveOrder(token: string, note?: string) {
     const payload = await verifyPortalToken(token);
-    const current = await this.repository.getByAccess(payload.accessId, payload.orderId);
+    const current = await this.repository.getByAccess(
+      payload.accessId,
+      payload.orderId,
+    );
 
     if (!current) {
       throw new Error("Portal access is no longer valid.");
@@ -148,7 +170,11 @@ export class PortalService {
   }
 
   async getInvoicesForToken(token: string): Promise<{
-    factory: { name: string; portalDisplayName: string | null; currency: string };
+    factory: {
+      name: string;
+      portalDisplayName: string | null;
+      currency: string;
+    };
     order: { id: string; code: string; title: string };
     invoices: PortalInvoiceListItem[];
   } | null> {
@@ -216,7 +242,11 @@ export class PortalService {
     token: string,
     invoiceId: string,
   ): Promise<{
-    factory: { name: string; portalDisplayName: string | null; currency: string };
+    factory: {
+      name: string;
+      portalDisplayName: string | null;
+      currency: string;
+    };
     order: { id: string; code: string; title: string };
     invoice: PortalInvoiceDetail;
   } | null> {

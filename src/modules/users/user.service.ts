@@ -2,13 +2,11 @@ import "server-only";
 
 import { UserStatus } from "@prisma/client";
 
+import { recordAudit } from "@/lib/audit";
 import { HttpError } from "@/lib/http/http-error";
 import type { AppSession } from "@/modules/auth/session";
 import { hashPassword } from "@/modules/auth/password";
-import {
-  canManageUser,
-  getManageableRoles,
-} from "./user-access";
+import { canManageUser, getManageableRoles } from "./user-access";
 import {
   createManagedUserSchema,
   resetManagedUserPasswordSchema,
@@ -30,7 +28,7 @@ export class UserService {
   async create(
     factoryId: string,
     actor: Pick<AppSession, "userId" | "role">,
-    input: unknown
+    input: unknown,
   ) {
     const parsed = createManagedUserSchema.parse(input);
 
@@ -44,16 +42,32 @@ export class UserService {
       throw new HttpError(409, "A user with this email already exists.");
     }
 
-    return this.repository.create(factoryId, {
+    const created = await this.repository.create(factoryId, {
       ...parsed,
       passwordHash: hashPassword(parsed.password),
     });
+
+    await recordAudit({
+      factoryId,
+      actorUserId: actor.userId,
+      actorRoleSnapshot: actor.role,
+      action: "USER_CREATED",
+      entityType: "User",
+      entityId: created.id,
+      metadata: {
+        email: created.email,
+        role: created.role,
+        status: created.status,
+      },
+    });
+
+    return created;
   }
 
   async updateManagedUser(
     factoryId: string,
     actor: Pick<AppSession, "userId" | "role">,
-    input: unknown
+    input: unknown,
   ) {
     const parsed = updateManagedUserSchema.parse(input);
     const target = await this.repository.findById(factoryId, parsed.userId);
@@ -82,13 +96,49 @@ export class UserService {
       }
     }
 
-    return this.repository.update(factoryId, parsed);
+    const updated = await this.repository.update(factoryId, parsed);
+
+    if (target.role !== parsed.role) {
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "USER_ROLE_CHANGED",
+        entityType: "User",
+        entityId: parsed.userId,
+        metadata: { previousRole: target.role, newRole: parsed.role },
+      });
+    }
+
+    if (target.status !== parsed.status && parsed.status === "DISABLED") {
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "USER_DISABLED",
+        entityType: "User",
+        entityId: parsed.userId,
+        metadata: { previousStatus: target.status },
+      });
+    } else {
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "USER_UPDATED",
+        entityType: "User",
+        entityId: parsed.userId,
+        metadata: { role: parsed.role, status: parsed.status },
+      });
+    }
+
+    return updated;
   }
 
   async resetPassword(
     factoryId: string,
     actor: Pick<AppSession, "userId" | "role">,
-    input: unknown
+    input: unknown,
   ) {
     const parsed = resetManagedUserPasswordSchema.parse(input);
     const target = await this.repository.findById(factoryId, parsed.userId);
@@ -101,10 +151,22 @@ export class UserService {
       throw new HttpError(403, "You cannot reset this user's password.");
     }
 
-    return this.repository.updatePassword(factoryId, {
+    const result = await this.repository.updatePassword(factoryId, {
       ...parsed,
       passwordHash: hashPassword(parsed.password),
       nextStatus: target.status === "INVITED" ? UserStatus.ACTIVE : undefined,
     });
+
+    await recordAudit({
+      factoryId,
+      actorUserId: actor.userId,
+      actorRoleSnapshot: actor.role,
+      action: "AUTH_PASSWORD_CHANGED",
+      entityType: "User",
+      entityId: parsed.userId,
+      metadata: { resetByAdmin: true },
+    });
+
+    return result;
   }
 }

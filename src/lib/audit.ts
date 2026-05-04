@@ -19,6 +19,14 @@ export type AuditAction =
   | "COST_CREATED"
   | "COST_UPDATED"
   | "COST_DELETED"
+  | "QUOTE_APPROVED"
+  | "QUOTE_REJECTED"
+  | "QUOTE_CANCELLED"
+  | "QUOTE_SENT"
+  | "INVOICE_SENT"
+  | "INVOICE_VOIDED"
+  | "PAYMENT_RECORDED"
+  | "PAYMENT_DELETED"
   | "PERMISSION_DENIED";
 
 export interface AuditEntry {
@@ -75,8 +83,6 @@ export function auditContextFromRequest(req: Request): {
     null;
   const userAgent = req.headers.get("user-agent") ?? null;
   const requestId =
-    req.headers.get("x-request-id") ??
-    req.headers.get("x-vercel-id") ??
-    null;
+    req.headers.get("x-request-id") ?? req.headers.get("x-vercel-id") ?? null;
   return { ipAddress, userAgent, requestId };
 }
