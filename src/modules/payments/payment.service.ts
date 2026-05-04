@@ -445,6 +445,12 @@ export class PaymentService {
     if (amount.lte(0)) {
       throw new HttpError(400, "قيمة العكس يجب أن تكون أكبر من صفر.");
     }
+    // Per-invoice advisory lock — symmetric with InvoiceService.applyPayment
+    // to serialize all amountPaid mutations on the same invoice.
+    await tx.$executeRawUnsafe(
+      `SELECT pg_advisory_xact_lock(hashtext($1))`,
+      `invoice_pay:${invoiceId}`,
+    );
     const invoice = await tx.invoice.findUnique({
       where: { id: invoiceId },
       select: {

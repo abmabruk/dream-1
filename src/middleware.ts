@@ -7,6 +7,8 @@ import { rateLimit } from "@/lib/security/rate-limit";
 const RATE_LIMIT_PATHS = new Set<string>([
   "/api/v1/session",
   "/api/v1/auth/forgot-password",
+  "/api/v1/auth/2fa/verify",
+  "/api/v1/auth/2fa/disable",
 ]);
 const RATE_LIMIT_MAX = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 min

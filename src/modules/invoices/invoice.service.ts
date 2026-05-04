@@ -616,6 +616,13 @@ export class InvoiceService {
     if (amount.lte(0)) {
       throw new HttpError(400, "قيمة الدفعة يجب أن تكون أكبر من صفر.");
     }
+    // Per-invoice advisory lock prevents concurrent applyPayment / reverse
+    // calls from observing a stale amountPaid (lost-update race).
+    // Lock is transaction-scoped — auto-released on commit/rollback.
+    await tx.$executeRawUnsafe(
+      `SELECT pg_advisory_xact_lock(hashtext($1))`,
+      `invoice_pay:${invoiceId}`,
+    );
     const invoice = await tx.invoice.findUnique({
       where: { id: invoiceId },
       select: {
