@@ -31,6 +31,9 @@ export const PERMISSIONS = [
   "portal:view",
   "costs:view",
   "costs:manage",
+  "me:view",
+  "search:view",
+  "finance:view",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
@@ -51,6 +54,8 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "orders:update",
     "payments:view",
     "portal:view",
+    "me:view",
+    "search:view",
   ],
   SUPERVISOR: [
     "dashboard:view",
@@ -64,8 +69,10 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "orders:view",
     "production:view",
     "production:assign",
+    "me:view",
+    "search:view",
   ],
-  WORKER: ["production:view"],
+  WORKER: ["production:view", "me:view"],
   ACCOUNTANT: [
     "dashboard:view",
     "notifications:view",
@@ -75,8 +82,11 @@ export const rolePermissions: Record<UserRole, Permission[]> = {
     "payments:view",
     "costs:view",
     "costs:manage",
+    "me:view",
+    "search:view",
+    "finance:view",
   ],
-  CUSTOMER: ["portal:view"],
+  CUSTOMER: ["portal:view", "me:view"],
 };
 
 export function hasPermission(role: UserRole, permission: Permission) {

@@ -9,7 +9,7 @@ const service = new CostService();
 
 export async function GET(request: Request) {
   return withRouteErrorHandling(async () => {
-    const access = await requireApiPermission("costs:view");
+    const access = await requireApiPermission("finance:view");
     if (!access.ok) return access.response;
 
     const url = new URL(request.url);

@@ -8,9 +8,10 @@ describe("role permissions", () => {
   });
 
   it("limits workers to the production workspace only", () => {
-    expect(rolePermissions.WORKER).toEqual(["production:view"]);
+    expect(rolePermissions.WORKER).toEqual(["production:view", "me:view"]);
     expect(hasPermission("WORKER", "notifications:view")).toBe(false);
     expect(hasPermission("WORKER", "production:view")).toBe(true);
+    expect(hasPermission("WORKER", "me:view")).toBe(true);
   });
 
   it("grants accountants reporting and notification access without user management", () => {
