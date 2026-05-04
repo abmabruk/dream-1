@@ -24,10 +24,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { StatusPill, useToast } from "@/components/ui";
 import { formatSAR } from "@/lib/format";
 
-import {
-  QUOTE_STATUS_LABELS_AR,
-  QUOTE_STATUS_TONE,
-} from "./quote-card";
+import { QUOTE_STATUS_LABELS_AR, QUOTE_STATUS_TONE } from "./quote-card";
 
 export interface QuoteLine {
   id: string;
@@ -118,11 +115,11 @@ function ProductPicker({
   useEffect(() => {
     if (debRef.current) window.clearTimeout(debRef.current);
     const q = value.trim();
-    if (q.length < 2) {
-      setHits([]);
-      return;
-    }
     debRef.current = window.setTimeout(async () => {
+      if (q.length < 2) {
+        setHits([]);
+        return;
+      }
       try {
         const r = await fetch(
           `/api/v1/products/picker?q=${encodeURIComponent(q)}`,
@@ -182,7 +179,8 @@ function ProductPicker({
                     </span>
                   ) : null}
                 </span>
-                {h.defaultUnitPrice !== null && h.defaultUnitPrice !== undefined ? (
+                {h.defaultUnitPrice !== null &&
+                h.defaultUnitPrice !== undefined ? (
                   <span className="text-xs tabular-nums text-[var(--muted-foreground)]">
                     {String(h.defaultUnitPrice)}
                   </span>
@@ -403,14 +401,11 @@ export function QuoteForm({
     if (due === null) return; // user cancelled
     setBusy("invoice");
     try {
-      const r = await fetch(
-        `/api/v1/quotes/${quote.id}/generate-invoice`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(due.trim() ? { dueDate: due.trim() } : {}),
-        },
-      );
+      const r = await fetch(`/api/v1/quotes/${quote.id}/generate-invoice`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(due.trim() ? { dueDate: due.trim() } : {}),
+      });
       const json = await r.json();
       if (!r.ok || !json.ok) {
         toast(json?.error?.message ?? "تعذّر إنشاء الفاتورة", "error");
@@ -438,9 +433,7 @@ export function QuoteForm({
     );
   }
 
-  const validUntilValue = quote.validUntil
-    ? quote.validUntil.slice(0, 10)
-    : "";
+  const validUntilValue = quote.validUntil ? quote.validUntil.slice(0, 10) : "";
 
   return (
     <div className="space-y-5">
@@ -670,7 +663,8 @@ export function QuoteForm({
                   ...p,
                   description: hit.name,
                   unitPrice:
-                    hit.defaultUnitPrice !== null && hit.defaultUnitPrice !== undefined
+                    hit.defaultUnitPrice !== null &&
+                    hit.defaultUnitPrice !== undefined
                       ? String(hit.defaultUnitPrice)
                       : p.unitPrice,
                   productId: hit.id,
@@ -845,7 +839,9 @@ export function QuoteForm({
               </dd>
             </div>
             <label className="flex items-center justify-between gap-3 text-sm">
-              <span className="text-[var(--muted-foreground)]">شامل ضريبة؟</span>
+              <span className="text-[var(--muted-foreground)]">
+                شامل ضريبة؟
+              </span>
               <input
                 type="checkbox"
                 defaultChecked={quote.taxInclusive}
