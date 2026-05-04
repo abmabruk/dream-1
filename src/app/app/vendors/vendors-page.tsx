@@ -18,10 +18,7 @@ interface ApiResponse<T> {
   error?: { message: string };
 }
 
-async function api<T>(
-  url: string,
-  init?: RequestInit,
-): Promise<T> {
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, {
     ...init,
     headers: {
@@ -341,18 +338,19 @@ function VendorForm({
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <div className="grid gap-4 md:grid-cols-2">
-        <Field name="name" label="الاسم" required defaultValue={initial?.name} />
+        <Field
+          name="name"
+          label="الاسم"
+          required
+          defaultValue={initial?.name}
+        />
         <Field name="code" label="الكود" defaultValue={initial?.code ?? ""} />
         <Field
           name="taxNumber"
           label="الرقم الضريبي"
           defaultValue={initial?.taxNumber ?? ""}
         />
-        <Field
-          name="city"
-          label="المدينة"
-          defaultValue={initial?.city ?? ""}
-        />
+        <Field name="city" label="المدينة" defaultValue={initial?.city ?? ""} />
         <Field
           name="phone"
           label="الهاتف"
@@ -389,10 +387,7 @@ function VendorForm({
           />
         </div>
         <div className="md:col-span-2">
-          <label
-            className="text-sm font-medium"
-            htmlFor="notes"
-          >
+          <label className="text-sm font-medium" htmlFor="notes">
             ملاحظات
           </label>
           <textarea
@@ -415,6 +410,16 @@ function VendorForm({
           type="submit"
           className="button-primary"
           disabled={pending}
+          onClick={(e) => {
+            // Defensive: ensure submit fires on first click even if the
+            // native click → submit dispatch is suppressed by the dialog
+            // wrapper. Using requestSubmit triggers HTML5 validation and
+            // the form's onSubmit handler exactly once.
+            const form = e.currentTarget.form;
+            if (!form) return;
+            e.preventDefault();
+            form.requestSubmit(e.currentTarget);
+          }}
         >
           {pending ? "جاري الحفظ..." : mode === "create" ? "إنشاء" : "حفظ"}
         </button>
@@ -545,13 +550,10 @@ function ContactsManager({
 
   const addContact = async (input: VendorContactInputType) => {
     try {
-      await api<VendorContactDetail>(
-        `/api/v1/vendors/${vendor.id}/contacts`,
-        {
-          method: "POST",
-          body: JSON.stringify(input),
-        },
-      );
+      await api<VendorContactDetail>(`/api/v1/vendors/${vendor.id}/contacts`, {
+        method: "POST",
+        body: JSON.stringify(input),
+      });
       setAdding(false);
       await refresh();
       toast("✓ تمت إضافة جهة الاتصال", "success");
