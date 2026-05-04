@@ -98,7 +98,12 @@ export interface PaymentListFilters {
   to?: Date;
   /** "active" excludes soft-deleted (default), "all" includes them, "deleted" returns only deleted */
   deletedFilter?: "active" | "all" | "deleted";
+  take?: number;
+  skip?: number;
 }
+
+const PAYMENT_DEFAULT_TAKE = 50;
+const PAYMENT_MAX_TAKE = 200;
 
 export interface PaymentWritable {
   customerId: string;
@@ -127,15 +132,31 @@ export class PaymentRepository {
     if (deletedFilter === "active") where.deletedAt = null;
     else if (deletedFilter === "deleted") where.deletedAt = { not: null };
 
+    const rawTake = filters.take;
+    const take =
+      rawTake === undefined || !Number.isFinite(rawTake) || rawTake <= 0
+        ? PAYMENT_DEFAULT_TAKE
+        : Math.min(Math.floor(rawTake), PAYMENT_MAX_TAKE);
+    const rawSkip = filters.skip;
+    const skip =
+      rawSkip === undefined || !Number.isFinite(rawSkip) || rawSkip < 0
+        ? 0
+        : Math.floor(rawSkip);
+
     const rows = await db.payment.findMany({
       where,
       include: DEFAULT_INCLUDE,
       orderBy: [{ receivedAt: "desc" }, { createdAt: "desc" }],
+      take,
+      skip,
     });
     return rows.map(mapListItem);
   }
 
-  async getById(factoryId: string, paymentId: string): Promise<PaymentDetail | null> {
+  async getById(
+    factoryId: string,
+    paymentId: string,
+  ): Promise<PaymentDetail | null> {
     const row = await db.payment.findFirst({
       where: { id: paymentId, factoryId, deletedAt: null },
       include: DEFAULT_INCLUDE,

@@ -2,6 +2,7 @@ import "server-only";
 
 import { Prisma, type UserRole } from "@prisma/client";
 
+import { recordAudit } from "@/lib/audit";
 import { db, type PrismaTransaction } from "@/lib/db";
 import { HttpError } from "@/lib/http/http-error";
 import { computeTax, lineTotal, roundMoney, sumMoney } from "@/lib/money";
@@ -71,6 +72,8 @@ export interface InvoiceListOptions {
   from?: Date | string;
   to?: Date | string;
   deletedFilter?: "active" | "all" | "deleted";
+  take?: number;
+  skip?: number;
 }
 
 export class InvoiceService {
@@ -116,6 +119,8 @@ export class InvoiceService {
       from: opts.from ? new Date(opts.from) : undefined,
       to: opts.to ? new Date(opts.to) : undefined,
       deletedFilter: opts.deletedFilter,
+      take: opts.take,
+      skip: opts.skip,
     };
     return this.repository.list(factoryId, filters);
   }
@@ -149,13 +154,18 @@ export class InvoiceService {
       if (!customer) throw new HttpError(404, "العميل غير موجود.");
 
       if (parsed.orderId) {
-        const order = await this.repository.findOrder(tx, factoryId, parsed.orderId);
+        const order = await this.repository.findOrder(
+          tx,
+          factoryId,
+          parsed.orderId,
+        );
         if (!order) throw new HttpError(404, "الطلب غير موجود.");
       }
 
-      const taxRate = parsed.taxRate !== undefined
-        ? new Prisma.Decimal(parsed.taxRate)
-        : DEFAULT_TAX_RATE;
+      const taxRate =
+        parsed.taxRate !== undefined
+          ? new Prisma.Decimal(parsed.taxRate)
+          : DEFAULT_TAX_RATE;
       const taxInclusive = parsed.taxInclusive ?? false;
       const discountAmount = roundMoney(parsed.discountAmount ?? 0);
 
@@ -201,7 +211,11 @@ export class InvoiceService {
     this.assertManage(actor.role);
 
     return db.$transaction(async (tx) => {
-      const quote = await this.repository.findQuoteWithLines(tx, factoryId, quoteId);
+      const quote = await this.repository.findQuoteWithLines(
+        tx,
+        factoryId,
+        quoteId,
+      );
       if (!quote) throw new HttpError(404, "عرض السعر غير موجود.");
       if (quote.status !== "APPROVED") {
         throw new HttpError(409, "لا يمكن إنشاء فاتورة إلا من عرض سعر معتمد.");
@@ -212,7 +226,11 @@ export class InvoiceService {
       if (!order) throw new HttpError(404, "الطلب غير موجود.");
 
       const customerId = order.customerId;
-      const customer = await this.repository.findCustomer(tx, factoryId, customerId);
+      const customer = await this.repository.findCustomer(
+        tx,
+        factoryId,
+        customerId,
+      );
       if (!customer) throw new HttpError(404, "العميل غير موجود.");
 
       const writableLines: InvoiceLineWritable[] = [...quote.lines]
@@ -281,40 +299,50 @@ export class InvoiceService {
       )) as RawInvoice | null;
       if (!existing) throw new HttpError(404, "الفاتورة غير موجودة.");
       this.assertDraftOnly(existing);
-      if (parsed.expectedUpdatedAt
-        && existing.updatedAt.toISOString() !== parsed.expectedUpdatedAt) {
-        throw new HttpError(409, "تم تعديل الفاتورة من جهة أخرى. أعد تحميل الصفحة.");
+      if (
+        parsed.expectedUpdatedAt &&
+        existing.updatedAt.toISOString() !== parsed.expectedUpdatedAt
+      ) {
+        throw new HttpError(
+          409,
+          "تم تعديل الفاتورة من جهة أخرى. أعد تحميل الصفحة.",
+        );
       }
 
-      const taxRate = parsed.taxRate !== undefined
-        ? new Prisma.Decimal(parsed.taxRate)
-        : existing.taxRate;
+      const taxRate =
+        parsed.taxRate !== undefined
+          ? new Prisma.Decimal(parsed.taxRate)
+          : existing.taxRate;
       const taxInclusive = parsed.taxInclusive ?? existing.taxInclusive;
-      const discountAmount = parsed.discountAmount !== undefined
-        ? roundMoney(parsed.discountAmount)
-        : existing.discountAmount;
-      const dueDate = parsed.dueDate !== undefined
-        ? parsed.dueDate
-          ? new Date(parsed.dueDate)
-          : null
-        : existing.dueDate;
+      const discountAmount =
+        parsed.discountAmount !== undefined
+          ? roundMoney(parsed.discountAmount)
+          : existing.discountAmount;
+      const dueDate =
+        parsed.dueDate !== undefined
+          ? parsed.dueDate
+            ? new Date(parsed.dueDate)
+            : null
+          : existing.dueDate;
       const notes = parsed.notes !== undefined ? parsed.notes : existing.notes;
-      const internalNotes = parsed.internalNotes !== undefined
-        ? parsed.internalNotes
-        : existing.internalNotes;
+      const internalNotes =
+        parsed.internalNotes !== undefined
+          ? parsed.internalNotes
+          : existing.internalNotes;
 
-      const writableLines = parsed.lines !== undefined
-        ? this.buildWritableLines(parsed.lines)
-        : existing.lines.map((l) => ({
-            description: l.description,
-            productId: l.productId,
-            sku: l.sku,
-            quoteLineId: l.quoteLineId,
-            quantity: l.quantity,
-            unitPrice: l.unitPrice,
-            lineTotal: l.lineTotal,
-            sortOrder: l.sortOrder,
-          }));
+      const writableLines =
+        parsed.lines !== undefined
+          ? this.buildWritableLines(parsed.lines)
+          : existing.lines.map((l) => ({
+              description: l.description,
+              productId: l.productId,
+              sku: l.sku,
+              quoteLineId: l.quoteLineId,
+              quantity: l.quantity,
+              unitPrice: l.unitPrice,
+              lineTotal: l.lineTotal,
+              sortOrder: l.sortOrder,
+            }));
 
       const totals = this.computeTotals({
         lines: writableLines,
@@ -456,7 +484,7 @@ export class InvoiceService {
         existing.customerId,
       );
 
-      return this.repository.assignNumberAndSend(tx, invoiceId, {
+      const sent = await this.repository.assignNumberAndSend(tx, invoiceId, {
         number,
         numberSeq,
         sentAt: new Date(),
@@ -467,6 +495,21 @@ export class InvoiceService {
         buyerTaxNumberSnapshot: customer?.taxNumber ?? null,
         buyerAddressSnapshot: customer?.address ?? null,
       });
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "INVOICE_SENT",
+        entityType: "Invoice",
+        entityId: invoiceId,
+        metadata: {
+          number,
+          numberSeq,
+          customerId: existing.customerId,
+          total: sent.total.toString(),
+        },
+      });
+      return sent;
     });
   }
 
@@ -490,10 +533,24 @@ export class InvoiceService {
       if (existing.status === "VOID") {
         throw new HttpError(409, "الفاتورة ملغاة بالفعل.");
       }
-      return this.repository.setStatus(tx, invoiceId, "VOID", {
+      const voided = await this.repository.setStatus(tx, invoiceId, "VOID", {
         voidedAt: new Date(),
         voidedReason: reason.trim(),
       });
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "INVOICE_VOIDED",
+        entityType: "Invoice",
+        entityId: invoiceId,
+        metadata: {
+          number: existing.number,
+          previousStatus: existing.status,
+          reason: reason.trim(),
+        },
+      });
+      return voided;
     });
   }
 
@@ -591,7 +648,9 @@ export class InvoiceService {
     };
   }
 
-  private buildWritableLines(inputs: InvoiceLineInputType[]): InvoiceLineWritable[] {
+  private buildWritableLines(
+    inputs: InvoiceLineInputType[],
+  ): InvoiceLineWritable[] {
     return inputs.map((line, index) =>
       this.buildWritableLine(line, line.sortOrder ?? index),
     );
@@ -602,7 +661,11 @@ export class InvoiceService {
     discountAmount: Prisma.Decimal;
     taxRate: Prisma.Decimal;
     taxInclusive: boolean;
-  }): { subtotal: Prisma.Decimal; taxAmount: Prisma.Decimal; total: Prisma.Decimal } {
+  }): {
+    subtotal: Prisma.Decimal;
+    taxAmount: Prisma.Decimal;
+    total: Prisma.Decimal;
+  } {
     const linesSum = sumMoney(args.lines.map((l) => l.lineTotal));
     let preTax = roundMoney(linesSum.minus(args.discountAmount));
     if (preTax.lt(0)) preTax = ZERO;

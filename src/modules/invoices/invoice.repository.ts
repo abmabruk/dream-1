@@ -138,7 +138,12 @@ export interface InvoiceListFilters {
   to?: Date;
   /** "active" excludes soft-deleted (default), "all" includes them, "deleted" returns only deleted */
   deletedFilter?: "active" | "all" | "deleted";
+  take?: number;
+  skip?: number;
 }
+
+const INVOICE_DEFAULT_TAKE = 50;
+const INVOICE_MAX_TAKE = 200;
 
 export class InvoiceRepository {
   async list(
@@ -157,10 +162,23 @@ export class InvoiceRepository {
     if (deletedFilter === "active") where.deletedAt = null;
     else if (deletedFilter === "deleted") where.deletedAt = { not: null };
 
+    const rawTake = filters.take;
+    const take =
+      rawTake === undefined || !Number.isFinite(rawTake) || rawTake <= 0
+        ? INVOICE_DEFAULT_TAKE
+        : Math.min(Math.floor(rawTake), INVOICE_MAX_TAKE);
+    const rawSkip = filters.skip;
+    const skip =
+      rawSkip === undefined || !Number.isFinite(rawSkip) || rawSkip < 0
+        ? 0
+        : Math.floor(rawSkip);
+
     const rows = await db.invoice.findMany({
       where,
       include: DEFAULT_INCLUDE,
       orderBy: [{ issueDate: "desc" }, { numberSeq: "desc" }],
+      take,
+      skip,
     });
     return rows.map(mapListItem);
   }

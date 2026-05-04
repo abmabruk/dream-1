@@ -108,11 +108,25 @@ export class CreditNoteRepository {
   async listByInvoice(
     factoryId: string,
     invoiceId: string,
+    pagination: { take?: number; skip?: number } = {},
   ): Promise<CreditNoteListItem[]> {
+    const rawTake = pagination.take;
+    const take =
+      rawTake === undefined || !Number.isFinite(rawTake) || rawTake <= 0
+        ? 50
+        : Math.min(Math.floor(rawTake), 200);
+    const rawSkip = pagination.skip;
+    const skip =
+      rawSkip === undefined || !Number.isFinite(rawSkip) || rawSkip < 0
+        ? 0
+        : Math.floor(rawSkip);
+
     const rows = await db.creditNote.findMany({
       where: { factoryId, invoiceId, deletedAt: null },
       include: DEFAULT_INCLUDE,
       orderBy: [{ createdAt: "desc" }],
+      take,
+      skip,
     });
     return rows.map(mapListItem);
   }

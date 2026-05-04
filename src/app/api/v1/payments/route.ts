@@ -17,13 +17,25 @@ const ListQuery = z.object({
   kind: PaymentKindEnum.optional(),
   from: z.string().optional(),
   to: z.string().optional(),
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(200).optional(),
 });
 
 export const GET = defineRoute({
   permission: "payments:view",
   query: ListQuery,
   async handler({ session, query }) {
-    const result = await service.list(session.factoryId, session.role, query);
+    const pageSize = query.pageSize ?? 50;
+    const page = query.page ?? 1;
+    const skip = (page - 1) * pageSize;
+    const result = await service.list(session.factoryId, session.role, {
+      customerId: query.customerId,
+      kind: query.kind,
+      from: query.from,
+      to: query.to,
+      take: pageSize,
+      skip,
+    });
     return ok(result);
   },
 });

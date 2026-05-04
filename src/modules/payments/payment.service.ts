@@ -2,9 +2,15 @@ import "server-only";
 
 import { Prisma, type UserRole } from "@prisma/client";
 
+import { recordAudit } from "@/lib/audit";
 import { db, type PrismaTransaction } from "@/lib/db";
 import { HttpError } from "@/lib/http/http-error";
-import { decToString, parseMoneyInput, roundMoney, sumMoney } from "@/lib/money";
+import {
+  decToString,
+  parseMoneyInput,
+  roundMoney,
+  sumMoney,
+} from "@/lib/money";
 import { hasPermission } from "@/modules/auth/roles";
 import { InvoiceService } from "@/modules/invoices/invoice.service";
 
@@ -33,6 +39,8 @@ export interface PaymentListOptions {
   from?: Date | string;
   to?: Date | string;
   deletedFilter?: "active" | "all" | "deleted";
+  take?: number;
+  skip?: number;
 }
 
 export class PaymentService {
@@ -66,6 +74,8 @@ export class PaymentService {
       from: opts.from ? new Date(opts.from) : undefined,
       to: opts.to ? new Date(opts.to) : undefined,
       deletedFilter: opts.deletedFilter,
+      take: opts.take,
+      skip: opts.skip,
     };
     return this.repository.list(factoryId, filters);
   }
@@ -100,17 +110,11 @@ export class PaymentService {
       roundMoney(parseMoneyInput(a.amount)),
     );
     if (allocAmounts.some((a) => a.lte(0))) {
-      throw new HttpError(
-        400,
-        "قيمة كل تخصيص يجب أن تكون أكبر من صفر.",
-      );
+      throw new HttpError(400, "قيمة كل تخصيص يجب أن تكون أكبر من صفر.");
     }
     const allocSum = sumMoney(allocAmounts);
     if (allocSum.gt(amount)) {
-      throw new HttpError(
-        400,
-        "مجموع تخصيصات الفواتير يتجاوز قيمة الدفعة.",
-      );
+      throw new HttpError(400, "مجموع تخصيصات الفواتير يتجاوز قيمة الدفعة.");
     }
 
     const kind = parsed.kind ?? "PAYMENT";
@@ -129,7 +133,9 @@ export class PaymentService {
         kind,
         method,
         reference: parsed.reference ?? null,
-        receivedAt: parsed.receivedAt ? new Date(parsed.receivedAt) : new Date(),
+        receivedAt: parsed.receivedAt
+          ? new Date(parsed.receivedAt)
+          : new Date(),
         amount,
         notes: parsed.notes ?? null,
       };
@@ -151,7 +157,12 @@ export class PaymentService {
           a.invoiceId,
           parsed.customerId,
         );
-        await this.repository.createAllocation(tx, created.id, a.invoiceId, amt);
+        await this.repository.createAllocation(
+          tx,
+          created.id,
+          a.invoiceId,
+          amt,
+        );
         if (kind === "REFUND") {
           await this.reverseInvoicePayment(tx, a.invoiceId, amt);
         } else {
@@ -159,7 +170,23 @@ export class PaymentService {
         }
       }
 
-      return this.requireById(tx, factoryId, created.id);
+      const detail = await this.requireById(tx, factoryId, created.id);
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "PAYMENT_RECORDED",
+        entityType: "Payment",
+        entityId: created.id,
+        metadata: {
+          customerId: parsed.customerId,
+          kind,
+          method,
+          amount: amount.toString(),
+          allocationCount: allocations.length,
+        },
+      });
+      return detail;
     });
   }
 
@@ -172,11 +199,16 @@ export class PaymentService {
     this.assertManage(actor.role);
     const parsed = UpdatePaymentInput.parse(input) as UpdatePaymentInputType;
     return db.$transaction(async (tx) => {
-      const existing = await this.repository.getRawById(tx, factoryId, paymentId);
+      const existing = await this.repository.getRawById(
+        tx,
+        factoryId,
+        paymentId,
+      );
       if (!existing) throw new HttpError(404, "الدفعة غير موجودة.");
       await this.repository.update(tx, factoryId, paymentId, {
         method: parsed.method,
-        reference: parsed.reference !== undefined ? parsed.reference : undefined,
+        reference:
+          parsed.reference !== undefined ? parsed.reference : undefined,
         notes: parsed.notes !== undefined ? parsed.notes : undefined,
       });
       return this.requireById(tx, factoryId, paymentId);
@@ -190,10 +222,17 @@ export class PaymentService {
   ): Promise<{ id: string }> {
     this.assertManage(actor.role);
     return db.$transaction(async (tx) => {
-      const existing = await this.repository.getRawById(tx, factoryId, paymentId);
+      const existing = await this.repository.getRawById(
+        tx,
+        factoryId,
+        paymentId,
+      );
       if (!existing) throw new HttpError(404, "الدفعة غير موجودة.");
 
-      const allocs = await this.repository.listAllocationsForPayment(tx, paymentId);
+      const allocs = await this.repository.listAllocationsForPayment(
+        tx,
+        paymentId,
+      );
       for (const a of allocs) {
         // Reverse the original effect: PAYMENT increased amountPaid, REFUND decreased.
         if (existing.kind === "REFUND") {
@@ -204,7 +243,22 @@ export class PaymentService {
         }
       }
 
-      return this.repository.softDelete(tx, factoryId, paymentId);
+      const result = await this.repository.softDelete(tx, factoryId, paymentId);
+      await recordAudit({
+        factoryId,
+        actorUserId: actor.userId,
+        actorRoleSnapshot: actor.role,
+        action: "PAYMENT_DELETED",
+        entityType: "Payment",
+        entityId: paymentId,
+        metadata: {
+          customerId: existing.customerId,
+          kind: existing.kind,
+          amount: existing.amount.toString(),
+          reversedAllocations: allocs.length,
+        },
+      });
+      return result;
     });
   }
 
@@ -216,7 +270,9 @@ export class PaymentService {
     allocations: unknown,
   ): Promise<PaymentDetail> {
     this.assertManage(actor.role);
-    const parsed = AllocationInput.array().parse(allocations) as AllocationInputType[];
+    const parsed = AllocationInput.array().parse(
+      allocations,
+    ) as AllocationInputType[];
     if (parsed.length === 0) {
       throw new HttpError(400, "لم يتم تقديم أي تخصيصات.");
     }
@@ -226,20 +282,24 @@ export class PaymentService {
     }
 
     return db.$transaction(async (tx) => {
-      const existing = await this.repository.getRawById(tx, factoryId, paymentId);
+      const existing = await this.repository.getRawById(
+        tx,
+        factoryId,
+        paymentId,
+      );
       if (!existing) throw new HttpError(404, "الدفعة غير موجودة.");
 
-      const current = await this.repository.listAllocationsForPayment(tx, paymentId);
+      const current = await this.repository.listAllocationsForPayment(
+        tx,
+        paymentId,
+      );
       const currentSum = current.reduce<Prisma.Decimal>(
         (acc, a) => acc.plus(a.amount),
         new Prisma.Decimal(0),
       );
       const addSum = sumMoney(amounts);
       if (currentSum.plus(addSum).gt(existing.amount)) {
-        throw new HttpError(
-          400,
-          "مجموع التخصيصات يتجاوز قيمة الدفعة.",
-        );
+        throw new HttpError(400, "مجموع التخصيصات يتجاوز قيمة الدفعة.");
       }
 
       for (let i = 0; i < parsed.length; i += 1) {
@@ -271,15 +331,27 @@ export class PaymentService {
   ): Promise<PaymentDetail> {
     this.assertManage(actor.role);
     return db.$transaction(async (tx) => {
-      const existing = await this.repository.getRawById(tx, factoryId, paymentId);
+      const existing = await this.repository.getRawById(
+        tx,
+        factoryId,
+        paymentId,
+      );
       if (!existing) throw new HttpError(404, "الدفعة غير موجودة.");
 
-      const alloc = await this.repository.findAllocation(tx, paymentId, allocationId);
+      const alloc = await this.repository.findAllocation(
+        tx,
+        paymentId,
+        allocationId,
+      );
       if (!alloc) throw new HttpError(404, "التخصيص غير موجود.");
 
       // Reverse the allocation's effect on the invoice.
       if (existing.kind === "REFUND") {
-        await this.invoiceService.applyPayment(tx, alloc.invoiceId, alloc.amount);
+        await this.invoiceService.applyPayment(
+          tx,
+          alloc.invoiceId,
+          alloc.amount,
+        );
       } else {
         await this.reverseInvoicePayment(tx, alloc.invoiceId, alloc.amount);
       }
@@ -293,11 +365,13 @@ export class PaymentService {
   async getCustomerBalance(
     factoryId: string,
     customerId: string,
-  ): Promise<{ totalInvoiced: string; totalPaid: string; outstanding: string }> {
-    const { totalInvoiced, totalPaid } = await this.repository.getCustomerBalance(
-      factoryId,
-      customerId,
-    );
+  ): Promise<{
+    totalInvoiced: string;
+    totalPaid: string;
+    outstanding: string;
+  }> {
+    const { totalInvoiced, totalPaid } =
+      await this.repository.getCustomerBalance(factoryId, customerId);
     const ti = roundMoney(totalInvoiced);
     const tp = roundMoney(totalPaid);
     const outstanding = roundMoney(ti.minus(tp));
@@ -321,10 +395,7 @@ export class PaymentService {
     });
     if (!inv) throw new HttpError(404, "الفاتورة غير موجودة.");
     if (inv.customerId !== customerId) {
-      throw new HttpError(
-        400,
-        "لا يمكن تخصيص الدفعة لفاتورة عميل آخر.",
-      );
+      throw new HttpError(400, "لا يمكن تخصيص الدفعة لفاتورة عميل آخر.");
     }
   }
 
@@ -367,9 +438,9 @@ export class PaymentService {
     if (newAmountPaid.lte(0)) {
       // Demote PAID/PARTIALLY_PAID/OVERDUE back to SENT when fully reversed.
       if (
-        invoice.status === "PAID"
-        || invoice.status === "PARTIALLY_PAID"
-        || invoice.status === "OVERDUE"
+        invoice.status === "PAID" ||
+        invoice.status === "PARTIALLY_PAID" ||
+        invoice.status === "OVERDUE"
       ) {
         nextStatus = "SENT";
       }
