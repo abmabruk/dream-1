@@ -36,6 +36,7 @@ type ProjectCostRow = {
   updatedAt: Date;
   stageInstanceId: string | null;
   locationId: string | null;
+  quoteLineId: string | null;
 };
 
 type ProjectCostWithCreator = ProjectCostRow & {
@@ -48,6 +49,13 @@ type ProjectCostWithCreator = ProjectCostRow & {
     id: string;
     name: string;
   } | null;
+  quoteLine?: {
+    id: string;
+    description: string;
+    unitPrice: Prisma.Decimal;
+    quantity: Prisma.Decimal;
+    quote: { version: number } | null;
+  } | null;
 };
 
 interface ProjectCostDelegate {
@@ -57,6 +65,7 @@ interface ProjectCostDelegate {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
       location?: boolean;
+      quoteLine?: boolean | { select?: Record<string, unknown> };
     };
   }): Promise<ProjectCostWithCreator>;
   findFirst(args: {
@@ -68,6 +77,7 @@ interface ProjectCostDelegate {
       createdBy?: boolean;
       stageInstance?: boolean | { include?: { stage?: boolean } };
       location?: boolean;
+      quoteLine?: boolean | { select?: Record<string, unknown> };
     };
     select?: Record<string, boolean>;
     orderBy?: Record<string, "asc" | "desc"> | { incurredAt?: "asc" | "desc"; createdAt?: "asc" | "desc" }[];
@@ -126,8 +136,26 @@ function mapCost(c: ProjectCostWithCreator): CostListItem {
     stageName: c.stageInstance?.stage?.name ?? null,
     locationId: c.locationId ?? null,
     locationName: c.location?.name ?? null,
+    quoteLineId: c.quoteLineId ?? null,
+    quoteLineDescription: c.quoteLine?.description ?? null,
+    quoteLineSellPrice: c.quoteLine
+      ? new Prisma.Decimal(c.quoteLine.unitPrice)
+          .mul(new Prisma.Decimal(c.quoteLine.quantity))
+          .toFixed(2)
+      : null,
+    quoteVersion: c.quoteLine?.quote?.version ?? null,
   };
 }
+
+const QUOTE_LINE_INCLUDE = {
+  select: {
+    id: true,
+    description: true,
+    unitPrice: true,
+    quantity: true,
+    quote: { select: { version: true } },
+  },
+} as const;
 
 export class CostRepository {
   async create(
@@ -171,11 +199,13 @@ export class CostRepository {
           createdById: actorUserId,
           stageInstanceId: input.stageInstanceId ?? null,
           locationId: input.locationId ?? null,
+          quoteLineId: input.quoteLineId ?? null,
         } as never,
         include: {
           createdBy: true,
           stageInstance: { include: { stage: true } },
           location: true,
+          quoteLine: QUOTE_LINE_INCLUDE,
         },
       });
 
@@ -248,6 +278,7 @@ export class CostRepository {
         createdBy: true,
         stageInstance: { include: { stage: true } },
         location: true,
+        quoteLine: QUOTE_LINE_INCLUDE,
       },
       orderBy: [{ incurredAt: "desc" }, { createdAt: "desc" }],
     });

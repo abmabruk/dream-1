@@ -44,6 +44,7 @@ export const CostInput = z.object({
   incurredAt: z.string().min(1),
   stageInstanceId: z.string().min(1).nullable().optional(),
   locationId: z.string().min(1).nullable().optional(),
+  quoteLineId: z.string().min(1).nullable().optional(),
 });
 export type CostInputType = z.infer<typeof CostInput>;
 
@@ -65,6 +66,11 @@ export type CostListItem = {
   stageName: string | null;
   locationId: string | null;
   locationName: string | null;
+  quoteLineId: string | null;
+  quoteLineDescription: string | null;
+  /** Snapshot of (unitPrice * quantity) at query time, formatted as Decimal string. */
+  quoteLineSellPrice: string | null;
+  quoteVersion: number | null;
 };
 
 export type CostByStageEntry = {

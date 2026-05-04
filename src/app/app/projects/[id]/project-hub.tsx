@@ -1209,6 +1209,7 @@ export function ProjectHub({
                   project.currentStageInstance?.id ?? null
                 }
                 locations={project.locations.map((l) => ({ id: l.id, name: l.name, code: l.code }))}
+                orderId={project.orderId ?? null}
               />
             </TabsContent>
           ) : null}
