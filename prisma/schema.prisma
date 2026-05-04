@@ -269,7 +269,7 @@ model Inquiry {
   source              InquirySource @default(OTHER)
   stage               InquiryStage  @default(NEW)
   interest            String?
-  budgetAmount        Decimal?      @db.Decimal(12, 2)
+  budgetAmount        Decimal?      @db.Decimal(14, 2)
   nextFollowUpAt      DateTime?
   notes               String?
   convertedCustomerId String?
@@ -333,7 +333,7 @@ model Order {
   title                  String
   description            String?
   status                 OrderStatus        @default(DRAFT)
-  quotedAmount           Decimal?           @db.Decimal(12, 2)
+  quotedAmount           Decimal?           @db.Decimal(14, 2)
   targetDate             DateTime?
   approvedAt             DateTime?
   customerApprovedAt     DateTime?
@@ -576,7 +576,7 @@ model ProjectCost {
   projectId       String
   taskId          String?
   category        CostCategory          @default(OTHER)
-  amount          Decimal               @db.Decimal(12, 2)
+  amount          Decimal               @db.Decimal(14, 2)
   currency        String                @default("SAR")
   description     String
   vendorName      String?
@@ -670,7 +670,7 @@ model ProjectStageInstance {
   ownerUserId       String?
   notes             String?
   depositAttested   Boolean             @default(false)
-  depositAmount     Decimal?            @db.Decimal(12, 2)
+  depositAmount     Decimal?            @db.Decimal(14, 2)
   depositReceivedAt DateTime?
   depositMethod     String?
   depositReceiptUrl String?
@@ -700,7 +700,7 @@ model Location {
   notes        String?
   sortOrder    Int           @default(0)
   isTemplate   Boolean       @default(false)
-  quotedAmount Decimal?      @db.Decimal(12, 2)
+  quotedAmount Decimal?      @db.Decimal(14, 2)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   factory      Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
