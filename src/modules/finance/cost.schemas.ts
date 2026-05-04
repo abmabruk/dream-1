@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 export const COST_CATEGORY_VALUES = [
   "MATERIAL",
   "LABOR",
@@ -34,18 +36,20 @@ export const COST_CATEGORY_TONE: Record<
 
 export const CostInput = z.object({
   projectId: z.string().min(1),
-  taskId: z.string().min(1).optional(),
+  taskId: emptyStringToUndefined(z.string().min(1).optional()),
   category: CostCategoryEnum.default("OTHER"),
   amount: z.coerce.number().positive().max(99999999.99),
   currency: z.string().min(3).max(8).default("SAR"),
   description: z.string().min(2).max(400),
-  vendorName: z.string().max(200).optional(),
-  vendorId: z.string().min(1).nullable().optional(),
-  receiptUrl: z.string().max(500).optional(),
+  vendorName: emptyStringToUndefined(z.string().max(200).optional()),
+  vendorId: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  receiptUrl: emptyStringToUndefined(z.string().max(500).optional()),
   incurredAt: z.string().min(1),
-  stageInstanceId: z.string().min(1).nullable().optional(),
-  locationId: z.string().min(1).nullable().optional(),
-  quoteLineId: z.string().min(1).nullable().optional(),
+  stageInstanceId: emptyStringToUndefined(
+    z.string().min(1).nullable().optional(),
+  ),
+  locationId: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  quoteLineId: emptyStringToUndefined(z.string().min(1).nullable().optional()),
 });
 export type CostInputType = z.infer<typeof CostInput>;
 

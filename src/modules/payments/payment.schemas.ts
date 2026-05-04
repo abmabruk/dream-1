@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 export const PAYMENT_KIND_VALUES = ["PAYMENT", "REFUND", "ADJUSTMENT"] as const;
 export const PaymentKindEnum = z.enum(PAYMENT_KIND_VALUES);
 export type PaymentKind = z.infer<typeof PaymentKindEnum>;
@@ -41,18 +43,18 @@ export const RecordPaymentInput = z.object({
   customerId: z.string().min(1),
   kind: PaymentKindEnum.optional(),
   method: PaymentMethodEnum.optional(),
-  reference: z.string().max(120).nullable().optional(),
-  receivedAt: z.string().min(1).optional(),
+  reference: emptyStringToUndefined(z.string().max(120).nullable().optional()),
+  receivedAt: emptyStringToUndefined(z.string().min(1).optional()),
   amount: z.union([z.coerce.number().positive(), z.string().min(1)]),
-  notes: z.string().max(2000).nullable().optional(),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
   allocations: z.array(AllocationInput).default([]),
 });
 export type RecordPaymentInputType = z.infer<typeof RecordPaymentInput>;
 
 export const UpdatePaymentInput = z.object({
   method: PaymentMethodEnum.optional(),
-  reference: z.string().max(120).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
+  reference: emptyStringToUndefined(z.string().max(120).nullable().optional()),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
 });
 export type UpdatePaymentInputType = z.infer<typeof UpdatePaymentInput>;
 

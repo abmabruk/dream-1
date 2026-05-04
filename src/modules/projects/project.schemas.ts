@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 import {
   PROJECT_PRIORITY_VALUES,
   PROJECT_STATUS_VALUES,
@@ -19,26 +21,26 @@ export const taskApprovalStatusSchema = z.enum(TASK_APPROVAL_STATUS_VALUES);
 export const workQueueStatusSchema = z.enum(WORK_QUEUE_STATUS_VALUES);
 
 export const createProjectSchema = z.object({
-  orderId: z.string().min(1).optional(),
-  ownerUserId: z.string().min(1).optional(),
+  orderId: emptyStringToUndefined(z.string().min(1).optional()),
+  ownerUserId: emptyStringToUndefined(z.string().min(1).optional()),
   name: z.string().min(3).max(160),
-  description: z.string().max(4000).optional(),
+  description: emptyStringToUndefined(z.string().max(4000).optional()),
   priority: projectPrioritySchema.default("MEDIUM"),
-  startDate: z.string().min(1).optional(),
-  dueDate: z.string().min(1).optional(),
-  notes: z.string().max(4000).optional(),
+  startDate: emptyStringToUndefined(z.string().min(1).optional()),
+  dueDate: emptyStringToUndefined(z.string().min(1).optional()),
+  notes: emptyStringToUndefined(z.string().max(4000).optional()),
 });
 
 export const createProjectTaskSchema = z.object({
   projectId: z.string().min(1),
   title: z.string().min(3).max(200),
-  description: z.string().max(4000).optional(),
+  description: emptyStringToUndefined(z.string().max(4000).optional()),
   priority: projectPrioritySchema.default("MEDIUM"),
-  assignedToUserId: z.string().min(1).optional(),
-  dueDate: z.string().min(1).optional(),
+  assignedToUserId: emptyStringToUndefined(z.string().min(1).optional()),
+  dueDate: emptyStringToUndefined(z.string().min(1).optional()),
   requiresApproval: z.boolean().default(false),
-  stageInstanceId: z.string().min(1).optional(),
-  locationId: z.string().min(1).optional(),
+  stageInstanceId: emptyStringToUndefined(z.string().min(1).optional()),
+  locationId: emptyStringToUndefined(z.string().min(1).optional()),
 });
 
 export const updateTaskStageSchema = z.object({
@@ -86,7 +88,6 @@ export const reviewProjectTaskSchema = z.object({
   note: z.string().min(1).max(1000).optional(),
 });
 
-
 export const updateTaskStatusSchema = z.object({
   status: projectTaskStatusSchema,
 });
@@ -94,7 +95,6 @@ export const updateTaskStatusSchema = z.object({
 export const opsDateSchema = z.object({
   date: boardDateSchema.optional(),
 });
-
 
 // --- Stage instances ---
 
@@ -117,14 +117,10 @@ export const advanceStageInputSchema = z.object({
 export const attestDepositInputSchema = z.object({
   stageInstanceId: z.string().min(1),
   amount: z.number().nonnegative().optional(),
-  receivedAt: z.string().min(1).optional(),
-  method: z.enum([
-    "bank_transfer",
-    "cash",
-    "check",
-    "stc_pay",
-    "other",
-  ]).optional(),
+  receivedAt: emptyStringToUndefined(z.string().min(1).optional()),
+  method: z
+    .enum(["bank_transfer", "cash", "check", "stc_pay", "other"])
+    .optional(),
   receiptUrl: z.string().max(2000).optional(),
   note: z.string().max(2000).optional(),
   drawingsApproved: z.boolean().optional(),
@@ -139,7 +135,12 @@ export const createLocationInputSchema = z.object({
   notes: z.string().max(2000).optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
-  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
+  quotedAmount: z.coerce
+    .number()
+    .nonnegative()
+    .max(99999999.99)
+    .nullable()
+    .optional(),
 });
 
 export const updateLocationInputSchema = z.object({
@@ -149,7 +150,12 @@ export const updateLocationInputSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
-  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
+  quotedAmount: z.coerce
+    .number()
+    .nonnegative()
+    .max(99999999.99)
+    .nullable()
+    .optional(),
 });
 
 export const updateLocationOnTaskSchema = z.object({
@@ -170,7 +176,12 @@ export const createLocationBodySchema = z.object({
   code: z.string().max(40).optional(),
   notes: z.string().max(2000).optional(),
   isTemplate: z.boolean().optional(),
-  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
+  quotedAmount: z.coerce
+    .number()
+    .nonnegative()
+    .max(99999999.99)
+    .nullable()
+    .optional(),
 });
 
 export const updateLocationBodySchema = z.object({
@@ -179,17 +190,26 @@ export const updateLocationBodySchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   sortOrder: z.number().int().nonnegative().optional(),
   isTemplate: z.boolean().optional(),
-  quotedAmount: z.coerce.number().nonnegative().max(99999999.99).nullable().optional(),
+  quotedAmount: z.coerce
+    .number()
+    .nonnegative()
+    .max(99999999.99)
+    .nullable()
+    .optional(),
 });
 
 export type AdvanceStageInput = z.infer<typeof advanceStageInputSchema>;
 export type AttestDepositInput = z.infer<typeof attestDepositInputSchema>;
 export type CreateLocationInput = z.infer<typeof createLocationInputSchema>;
 export type UpdateLocationInput = z.infer<typeof updateLocationInputSchema>;
-export type UpdateLocationOnTaskInput = z.infer<typeof updateLocationOnTaskSchema>;
+export type UpdateLocationOnTaskInput = z.infer<
+  typeof updateLocationOnTaskSchema
+>;
 export type CloneLocationInput = z.infer<typeof cloneLocationInputSchema>;
 export type ReorderLocationsInput = z.infer<typeof reorderLocationsSchema>;
-export type StageInstanceStatusValue = z.infer<typeof stageInstanceStatusSchema>;
+export type StageInstanceStatusValue = z.infer<
+  typeof stageInstanceStatusSchema
+>;
 
 export type CreateProjectInput = z.infer<typeof createProjectSchema>;
 export type CreateProjectTaskInput = z.infer<typeof createProjectTaskSchema>;
@@ -198,7 +218,9 @@ export type MoveTaskToProjectInput = z.infer<typeof moveTaskToProjectSchema>;
 export type AddTaskToTodayInput = z.infer<typeof addTaskToTodaySchema>;
 export type MoveQueueItemInput = z.infer<typeof moveQueueItemSchema>;
 export type ReorderQueueInput = z.infer<typeof reorderQueueSchema>;
-export type RescheduleQueueItemInput = z.infer<typeof rescheduleQueueItemSchema>;
+export type RescheduleQueueItemInput = z.infer<
+  typeof rescheduleQueueItemSchema
+>;
 export type UpdateQueueItemInput = z.infer<typeof updateQueueItemSchema>;
 export type ReviewProjectTaskInput = z.infer<typeof reviewProjectTaskSchema>;
 export type UpdateTaskStatusInput = z.infer<typeof updateTaskStatusSchema>;
@@ -248,7 +270,6 @@ export type ProjectTaskItem = {
     notes: string | null;
   } | null;
 };
-
 
 export type StageInstanceItem = {
   id: string;

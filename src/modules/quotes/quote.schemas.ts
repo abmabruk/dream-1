@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 export const QUOTE_STATUS_VALUES = [
   "DRAFT",
   "SENT",
@@ -42,11 +44,15 @@ export const CreateQuoteInput = z.object({
   orderId: z.string().min(1),
   taxRate: z.coerce.number().min(0).max(100).optional(),
   taxInclusive: z.boolean().optional(),
-  validUntil: z.string().min(1).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  internalNotes: z.string().max(2000).nullable().optional(),
+  validUntil: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
+  internalNotes: emptyStringToUndefined(
+    z.string().max(2000).nullable().optional(),
+  ),
   discountAmount: z.coerce.number().nonnegative().max(99999999.99).optional(),
-  discountReason: z.string().max(500).nullable().optional(),
+  discountReason: emptyStringToUndefined(
+    z.string().max(500).nullable().optional(),
+  ),
   lines: z.array(QuoteLineInput).default([]),
 });
 export type CreateQuoteInputType = z.infer<typeof CreateQuoteInput>;
@@ -59,13 +65,17 @@ export type CreateQuoteInputType = z.infer<typeof CreateQuoteInput>;
 export const UpdateQuoteInput = z.object({
   taxRate: z.coerce.number().min(0).max(100).optional(),
   taxInclusive: z.boolean().optional(),
-  validUntil: z.string().min(1).nullable().optional(),
-  notes: z.string().max(2000).nullable().optional(),
-  internalNotes: z.string().max(2000).nullable().optional(),
+  validUntil: emptyStringToUndefined(z.string().min(1).nullable().optional()),
+  notes: emptyStringToUndefined(z.string().max(2000).nullable().optional()),
+  internalNotes: emptyStringToUndefined(
+    z.string().max(2000).nullable().optional(),
+  ),
   discountAmount: z.coerce.number().nonnegative().max(99999999.99).optional(),
-  discountReason: z.string().max(500).nullable().optional(),
+  discountReason: emptyStringToUndefined(
+    z.string().max(500).nullable().optional(),
+  ),
   lines: z.array(QuoteLineInput).optional(),
-  expectedUpdatedAt: z.string().min(1).optional(),
+  expectedUpdatedAt: emptyStringToUndefined(z.string().min(1).optional()),
 });
 export type UpdateQuoteInputType = z.infer<typeof UpdateQuoteInput>;
 

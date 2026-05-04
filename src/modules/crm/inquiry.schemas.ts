@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 import { INQUIRY_SOURCE_VALUES, INQUIRY_STAGE_VALUES } from "./inquiry-stage";
 
 export const inquiryStageSchema = z.enum(INQUIRY_STAGE_VALUES);
@@ -8,20 +10,20 @@ export const inquirySourceSchema = z.enum(INQUIRY_SOURCE_VALUES);
 export const createInquirySchema = z.object({
   name: z.string().min(3).max(160),
   phone: z.string().min(7).max(30),
-  email: z.email().max(160).optional().or(z.literal("")),
+  email: emptyStringToUndefined(z.email().max(160).optional()),
   source: inquirySourceSchema,
-  interest: z.string().max(200).optional().or(z.literal("")),
+  interest: emptyStringToUndefined(z.string().max(200).optional()),
   budgetAmount: z.number().nonnegative().optional(),
-  nextFollowUpAt: z.string().min(1).optional(),
-  notes: z.string().max(1000).optional().or(z.literal("")),
-  assignedToId: z.string().min(1).optional().or(z.literal("")),
+  nextFollowUpAt: emptyStringToUndefined(z.string().min(1).optional()),
+  notes: emptyStringToUndefined(z.string().max(1000).optional()),
+  assignedToId: emptyStringToUndefined(z.string().min(1).optional()),
 });
 
 export const updateInquiryStageSchema = z.object({
   inquiryId: z.string().min(1),
   stage: inquiryStageSchema,
-  notes: z.string().max(1000).optional().or(z.literal("")),
-  nextFollowUpAt: z.string().min(1).optional().or(z.literal("")),
+  notes: emptyStringToUndefined(z.string().max(1000).optional()),
+  nextFollowUpAt: emptyStringToUndefined(z.string().min(1).optional()),
 });
 
 export const inquiryListItemSchema = z.object({
@@ -43,13 +45,13 @@ export const inquiryListItemSchema = z.object({
 });
 
 export const ConvertInquiryInput = z.object({
-  customerEmail: z.string().email().optional().or(z.literal("")),
-  customerPhone: z.string().min(8).optional().or(z.literal("")),
-  customerCity: z.string().optional().or(z.literal("")),
-  customerDistrict: z.string().optional().or(z.literal("")),
+  customerEmail: emptyStringToUndefined(z.string().email().optional()),
+  customerPhone: emptyStringToUndefined(z.string().min(8).optional()),
+  customerCity: emptyStringToUndefined(z.string().optional()),
+  customerDistrict: emptyStringToUndefined(z.string().optional()),
   orderTitle: z.string().min(2).max(200),
-  orderDescription: z.string().max(2000).optional().or(z.literal("")),
-  orderTargetDate: z.string().optional().or(z.literal("")),
+  orderDescription: emptyStringToUndefined(z.string().max(2000).optional()),
+  orderTargetDate: emptyStringToUndefined(z.string().optional()),
 });
 
 export type CreateInquiryInput = z.infer<typeof createInquirySchema>;
