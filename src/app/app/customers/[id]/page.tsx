@@ -20,7 +20,7 @@ export default async function CustomerDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const session = await requirePermission("orders:view");
+  const session = await requirePermission("customers:view");
   const { id } = await params;
 
   const customer = await db.customer.findFirst({
@@ -54,7 +54,9 @@ export default async function CustomerDetailPage({
   }));
 
   const totalQuoted = orders.reduce((sum, o) => sum + o.quotedAmount, 0);
-  const location = [customer.city, customer.district].filter(Boolean).join("، ");
+  const location = [customer.city, customer.district]
+    .filter(Boolean)
+    .join("، ");
 
   return (
     <main className="space-y-6" dir="rtl">
@@ -68,9 +70,7 @@ export default async function CustomerDetailPage({
             <dt className="text-xs text-[var(--muted-foreground)]">
               البريد الإلكتروني
             </dt>
-            <dd className="mt-1 font-medium">
-              {customer.email ?? "—"}
-            </dd>
+            <dd className="mt-1 font-medium">{customer.email ?? "—"}</dd>
           </div>
           <div>
             <dt className="text-xs text-[var(--muted-foreground)]">الهاتف</dt>
