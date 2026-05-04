@@ -37,26 +37,7 @@ export type Permission = (typeof PERMISSIONS)[number];
 
 export const rolePermissions: Record<UserRole, Permission[]> = {
   OWNER: PERMISSIONS.slice(),
-  FACTORY_MANAGER: [
-    "dashboard:view",
-    "notifications:view",
-    "reports:view",
-    "ops:view",
-    "ops:manage",
-    "projects:view",
-    "projects:manage",
-    "crm:view",
-    "crm:manage",
-    "orders:view",
-    "orders:create",
-    "orders:update",
-    "production:view",
-    "production:assign",
-    "payments:view",
-    "users:manage",
-    "settings:manage",
-    "costs:view",
-  ],
+  FACTORY_MANAGER: PERMISSIONS.slice(),
   SALES_MANAGER: [
     "dashboard:view",
     "notifications:view",
