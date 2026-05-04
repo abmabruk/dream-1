@@ -192,8 +192,17 @@ export function VendorsPage({ canManage }: Props) {
                   {vendors.map((v) => (
                     <tr
                       key={v.id}
-                      className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-black/4"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`المورد ${v.name}`}
+                      className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-black/4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring,#0ea5e9)]"
                       onClick={() => openVendor(v.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openVendor(v.id);
+                        }
+                      }}
                     >
                       <td className="py-4 pe-4">
                         <p className="font-medium">{v.name}</p>

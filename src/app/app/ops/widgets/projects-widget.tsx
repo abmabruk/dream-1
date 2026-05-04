@@ -34,7 +34,10 @@ function InlineAddTaskForm({
     setError(null);
     setSaving(true);
     try {
-      await post(`/api/v1/projects/${projectId}/tasks`, { title: title.trim(), priority });
+      await post(`/api/v1/projects/${projectId}/tasks`, {
+        title: title.trim(),
+        priority,
+      });
       onDone();
     } catch (err) {
       setError(err instanceof Error ? err.message : "فشلت العملية.");
@@ -54,16 +57,25 @@ function InlineAddTaskForm({
       />
       <select value={priority} onChange={(e) => setPriority(e.target.value)}>
         {PRIORITIES.map((p) => (
-          <option key={p} value={p}>{PROJECT_PRIORITY_LABELS[p]}</option>
+          <option key={p} value={p}>
+            {PROJECT_PRIORITY_LABELS[p]}
+          </option>
         ))}
       </select>
       <button type="submit" className="gc-inline-submit" disabled={saving}>
         {saving ? "..." : "إضافة"}
       </button>
-      <button type="button" className="gc-inline-cancel" onClick={onCancel}>
+      <button
+        type="button"
+        className="gc-inline-cancel"
+        onClick={onCancel}
+        aria-label="إلغاء"
+      >
         ×
       </button>
-      {error && <span style={{ color: "#ef4444", fontSize: "0.65rem" }}>{error}</span>}
+      {error && (
+        <span style={{ color: "#ef4444", fontSize: "0.65rem" }}>{error}</span>
+      )}
     </form>
   );
 }
@@ -86,7 +98,10 @@ export function ProjectsWidget({
 
   // Reorder projects within the widget — uses the same persistent sort order
   // as /app/projects (POST /api/v1/projects/reorder).
-  async function handleMoveProject(projectId: string, direction: "up" | "down") {
+  async function handleMoveProject(
+    projectId: string,
+    direction: "up" | "down",
+  ) {
     const idx = projects.findIndex((p) => p.id === projectId);
     if (idx < 0) return;
     const target = direction === "up" ? idx - 1 : idx + 1;
@@ -101,7 +116,10 @@ export function ProjectsWidget({
         body: JSON.stringify({ orderedIds: next.map((p) => p.id) }),
       });
       if (!res.ok) throw new Error(String(res.status));
-      toast(direction === "up" ? "✓ تم النقل للأعلى" : "✓ تم النقل للأسفل", "success");
+      toast(
+        direction === "up" ? "✓ تم النقل للأعلى" : "✓ تم النقل للأسفل",
+        "success",
+      );
       onRefresh?.();
     } catch {
       toast("تعذّر النقل", "error");
@@ -133,7 +151,8 @@ export function ProjectsWidget({
         const isExpanded = expandedId === proj.id;
         const tasksDone = proj.tasks.filter((t) => t.status === "DONE").length;
         const totalTasks = proj.tasks.length;
-        const pct = totalTasks > 0 ? Math.round((tasksDone / totalTasks) * 100) : 0;
+        const pct =
+          totalTasks > 0 ? Math.round((tasksDone / totalTasks) * 100) : 0;
 
         return (
           <div key={proj.id} className="gc-project-item">
@@ -153,11 +172,16 @@ export function ProjectsWidget({
                   </Link>
                   <span
                     className="gc-priority-badge"
-                    style={{ background: `${PRIORITY_COLORS[proj.priority]}22`, color: PRIORITY_COLORS[proj.priority] }}
+                    style={{
+                      background: `${PRIORITY_COLORS[proj.priority]}22`,
+                      color: PRIORITY_COLORS[proj.priority],
+                    }}
                   >
                     {PROJECT_PRIORITY_LABELS[proj.priority]}
                   </span>
-                  <span className="gc-project-status">{PROJECT_STATUS_LABELS[proj.status]}</span>
+                  <span className="gc-project-status">
+                    {PROJECT_STATUS_LABELS[proj.status]}
+                  </span>
                   {canManage && projects.length > 1 && (
                     <span className="ms-auto inline-flex items-center gap-1">
                       <button
@@ -196,7 +220,9 @@ export function ProjectsWidget({
                       onClick={(e) => {
                         e.stopPropagation();
                         setExpandedId(proj.id);
-                        setAddingTaskForId(addingTaskForId === proj.id ? null : proj.id);
+                        setAddingTaskForId(
+                          addingTaskForId === proj.id ? null : proj.id,
+                        );
                       }}
                     >
                       +
@@ -214,7 +240,10 @@ export function ProjectsWidget({
                   <div className="gc-progress-bar">
                     <div
                       className="gc-progress-fill"
-                      style={{ width: `${pct}%`, background: pct === 100 ? "#10b981" : "#14b8a6" }}
+                      style={{
+                        width: `${pct}%`,
+                        background: pct === 100 ? "#10b981" : "#14b8a6",
+                      }}
                     />
                   </div>
                   <span className="gc-progress-text">{pct}%</span>
@@ -246,7 +275,9 @@ export function ProjectsWidget({
                   />
                 )}
                 {proj.tasks.map((task) => {
-                  const canQueue = ["BACKLOG", "PLANNED_TODAY"].includes(task.status) && !task.todayQueueItem;
+                  const canQueue =
+                    ["BACKLOG", "PLANNED_TODAY"].includes(task.status) &&
+                    !task.todayQueueItem;
                   return (
                     <TaskCard
                       key={task.id}
@@ -276,13 +307,23 @@ export function ProjectsWidget({
                           </button>
                         )}
                         {task.todayQueueItem && (
-                          <span style={{ fontSize: "0.6rem", color: "#8b5cf6", fontWeight: 600 }}>في الطابور</span>
+                          <span
+                            style={{
+                              fontSize: "0.6rem",
+                              color: "#8b5cf6",
+                              fontWeight: 600,
+                            }}
+                          >
+                            في الطابور
+                          </span>
                         )}
                       </div>
                     </TaskCard>
                   );
                 })}
-                {proj.tasks.length === 0 && <p className="gc-empty">لا توجد مهام</p>}
+                {proj.tasks.length === 0 && (
+                  <p className="gc-empty">لا توجد مهام</p>
+                )}
               </div>
             )}
           </div>

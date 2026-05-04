@@ -55,7 +55,8 @@ export function FinancePage({
 
   const [from, setFrom] = useState(defaultFrom);
   const [to, setTo] = useState(defaultTo);
-  const [categories, setCategories] = useState<CostCategory[]>(defaultCategories);
+  const [categories, setCategories] =
+    useState<CostCategory[]>(defaultCategories);
   const [search, setSearch] = useState("");
 
   const totals = useMemo(
@@ -106,7 +107,10 @@ export function FinancePage({
       p.margin ?? "",
       p.status,
     ]);
-    const lines = [headers.map(csvEscape).join(","), ...rows.map((r) => r.map(csvEscape).join(","))];
+    const lines = [
+      headers.map(csvEscape).join(","),
+      ...rows.map((r) => r.map(csvEscape).join(",")),
+    ];
     const csv = "﻿" + lines.join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -132,7 +136,11 @@ export function FinancePage({
         title="نظرة شاملة على التكاليف والهامش"
         description={`لوحة الماليات تجمع كل المشاريع، مرتبة حسب الهامش، مع إمكانية تصفية حسب الشهر والفئة.${canManageCosts ? "" : " (وضع للقراءة فقط)"}`}
         actions={
-          <button type="button" className="button-secondary" onClick={exportCsv}>
+          <button
+            type="button"
+            className="button-secondary"
+            onClick={exportCsv}
+          >
             تصدير CSV
           </button>
         }
@@ -193,7 +201,9 @@ export function FinancePage({
           </label>
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-xs text-[var(--muted-foreground)]">الفئات:</span>
+          <span className="text-xs text-[var(--muted-foreground)]">
+            الفئات:
+          </span>
           {COST_CATEGORY_VALUES.map((c) => {
             const active = categories.includes(c);
             return (
@@ -205,7 +215,9 @@ export function FinancePage({
                 style={{
                   borderColor: active ? "var(--accent)" : "var(--border)",
                   background: active ? "var(--accent)" : "var(--panel-strong)",
-                  color: active ? "var(--accent-foreground)" : "var(--foreground)",
+                  color: active
+                    ? "var(--accent-foreground)"
+                    : "var(--foreground)",
                 }}
               >
                 {COST_CATEGORY_LABELS_AR[c]}
@@ -272,84 +284,94 @@ export function FinancePage({
           </div>
         ) : (
           <>
-          {/* Mobile card list */}
-          <ul className="mt-4 flex flex-col gap-3 md:hidden">
-            {filteredProjects.map((p) => (
-              <FinanceRowCard key={p.projectId} project={p} />
-            ))}
-          </ul>
+            {/* Mobile card list */}
+            <ul className="mt-4 flex flex-col gap-3 md:hidden">
+              {filteredProjects.map((p) => (
+                <FinanceRowCard key={p.projectId} project={p} />
+              ))}
+            </ul>
 
-          {/* Desktop table */}
-          <div className="mt-4 hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[760px] text-sm">
-              <thead>
-                <tr className="text-start text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-                  <th className="py-2 text-start">المشروع</th>
-                  <th className="py-2 text-start">العميل</th>
-                  <th className="py-2 text-end">المعروض</th>
-                  <th className="py-2 text-end">التكاليف</th>
-                  <th className="py-2 text-end">الهامش</th>
-                  <th className="py-2 text-start">الحالة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProjects.map((p) => {
-                  const negativeMargin = p.margin && Number(p.margin) < 0;
-                  return (
-                    <tr
-                      key={p.projectId}
-                      className="cursor-pointer border-t hover:bg-[var(--panel-strong)]"
-                      style={{ borderColor: "var(--border)" }}
-                      onClick={() =>
-                        router.push(
-                          `/app/projects/${p.projectId}?tab=finance`,
-                        )
-                      }
-                    >
-                      <td className="py-2.5">
-                        <Link
-                          href={`/app/projects/${p.projectId}?tab=finance`}
-                          className="font-medium hover:underline"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {p.projectCode} · {p.projectName}
-                        </Link>
-                      </td>
-                      <td className="py-2.5 text-[var(--muted-foreground)]">
-                        {p.customerName ?? "—"}
-                      </td>
-                      <td className="py-2.5 text-end tabular-nums">
-                        {fmtMoney(p.quotedAmount)}
-                      </td>
-                      <td className="py-2.5 text-end tabular-nums">
-                        {fmtMoney(p.totalCost)}
-                      </td>
-                      <td
-                        className="py-2.5 text-end font-semibold tabular-nums"
-                        style={{
-                          color: negativeMargin
-                            ? "var(--tone-blocked-fg)"
-                            : "var(--foreground)",
+            {/* Desktop table */}
+            <div className="mt-4 hidden overflow-x-auto md:block">
+              <table className="w-full min-w-[760px] text-sm">
+                <thead>
+                  <tr className="text-start text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                    <th className="py-2 text-start">المشروع</th>
+                    <th className="py-2 text-start">العميل</th>
+                    <th className="py-2 text-end">المعروض</th>
+                    <th className="py-2 text-end">التكاليف</th>
+                    <th className="py-2 text-end">الهامش</th>
+                    <th className="py-2 text-start">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProjects.map((p) => {
+                    const negativeMargin = p.margin && Number(p.margin) < 0;
+                    return (
+                      <tr
+                        key={p.projectId}
+                        tabIndex={0}
+                        role="button"
+                        aria-label={`مشروع ${p.projectName}`}
+                        className="cursor-pointer border-t hover:bg-[var(--panel-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring,#0ea5e9)]"
+                        style={{ borderColor: "var(--border)" }}
+                        onClick={() =>
+                          router.push(
+                            `/app/projects/${p.projectId}?tab=finance`,
+                          )
+                        }
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            router.push(
+                              `/app/projects/${p.projectId}?tab=finance`,
+                            );
+                          }
                         }}
                       >
-                        {fmtMoney(p.margin)}
-                      </td>
-                      <td className="py-2.5">
-                        <StatusPill status={p.status} size="sm" />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                        <td className="py-2.5">
+                          <Link
+                            href={`/app/projects/${p.projectId}?tab=finance`}
+                            className="font-medium hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {p.projectCode} · {p.projectName}
+                          </Link>
+                        </td>
+                        <td className="py-2.5 text-[var(--muted-foreground)]">
+                          {p.customerName ?? "—"}
+                        </td>
+                        <td className="py-2.5 text-end tabular-nums">
+                          {fmtMoney(p.quotedAmount)}
+                        </td>
+                        <td className="py-2.5 text-end tabular-nums">
+                          {fmtMoney(p.totalCost)}
+                        </td>
+                        <td
+                          className="py-2.5 text-end font-semibold tabular-nums"
+                          style={{
+                            color: negativeMargin
+                              ? "var(--tone-blocked-fg)"
+                              : "var(--foreground)",
+                          }}
+                        >
+                          {fmtMoney(p.margin)}
+                        </td>
+                        <td className="py-2.5">
+                          <StatusPill status={p.status} size="sm" />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </>
         )}
       </section>
     </main>
   );
 }
-
 
 /**
  * Lightweight card representation of a finance row, used on mobile in

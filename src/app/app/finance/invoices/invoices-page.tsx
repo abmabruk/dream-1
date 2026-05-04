@@ -226,55 +226,109 @@ export function InvoicesPage({
             description="جرّب تعديل المرشحات أو أنشئ فاتورة جديدة."
           />
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[860px] text-sm">
-              <thead>
-                <tr className="text-start text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
-                  <th className="py-2 text-start">الرقم</th>
-                  <th className="py-2 text-start">العميل</th>
-                  <th className="py-2 text-start">تاريخ الإصدار</th>
-                  <th className="py-2 text-start">تاريخ الاستحقاق</th>
-                  <th className="py-2 text-end">الإجمالي</th>
-                  <th className="py-2 text-end">المدفوع</th>
-                  <th className="py-2 text-start">الحالة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((inv) => (
-                  <tr
-                    key={inv.id}
-                    onClick={() =>
-                      router.push(`/app/finance/invoices/${inv.id}`)
-                    }
-                    className="cursor-pointer border-t hover:bg-[var(--panel-strong)]"
+          <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full min-w-[860px] text-sm">
+                <thead>
+                  <tr className="text-start text-xs uppercase tracking-[0.16em] text-[var(--muted-foreground)]">
+                    <th className="py-2 text-start">الرقم</th>
+                    <th className="py-2 text-start">العميل</th>
+                    <th className="py-2 text-start">تاريخ الإصدار</th>
+                    <th className="py-2 text-start">تاريخ الاستحقاق</th>
+                    <th className="py-2 text-end">الإجمالي</th>
+                    <th className="py-2 text-end">المدفوع</th>
+                    <th className="py-2 text-start">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((inv) => (
+                    <tr
+                      key={inv.id}
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`فاتورة ${inv.number}`}
+                      onClick={() =>
+                        router.push(`/app/finance/invoices/${inv.id}`)
+                      }
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          router.push(`/app/finance/invoices/${inv.id}`);
+                        }
+                      }}
+                      className="cursor-pointer border-t hover:bg-[var(--panel-strong)] focus:bg-[var(--panel-strong)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring,#0ea5e9)]"
+                      style={{ borderColor: "var(--border)" }}
+                    >
+                      <td className="py-2.5 font-medium">{inv.number}</td>
+                      <td className="py-2.5">{customerName(inv.customerId)}</td>
+                      <td className="py-2.5 text-[var(--muted-foreground)]">
+                        {formatDateAr(inv.issueDate)}
+                      </td>
+                      <td className="py-2.5 text-[var(--muted-foreground)]">
+                        {inv.dueDate ? formatDateAr(inv.dueDate) : "—"}
+                      </td>
+                      <td className="py-2.5 text-end tabular-nums">
+                        {formatSAR(inv.total)}
+                      </td>
+                      <td className="py-2.5 text-end tabular-nums">
+                        {formatSAR(inv.amountPaid)}
+                      </td>
+                      <td className="py-2.5">
+                        <StatusPill
+                          status={inv.status}
+                          label={INVOICE_STATUS_LABELS_AR[inv.status]}
+                          size="sm"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ul className="md:hidden flex flex-col gap-2" role="list">
+              {filtered.map((inv) => (
+                <li key={inv.id}>
+                  <a
+                    href={`/app/finance/invoices/${inv.id}`}
+                    className="block rounded-xl border bg-[var(--panel-strong)] p-3 min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring,#0ea5e9)]"
                     style={{ borderColor: "var(--border)" }}
                   >
-                    <td className="py-2.5 font-medium">{inv.number}</td>
-                    <td className="py-2.5">{customerName(inv.customerId)}</td>
-                    <td className="py-2.5 text-[var(--muted-foreground)]">
-                      {formatDateAr(inv.issueDate)}
-                    </td>
-                    <td className="py-2.5 text-[var(--muted-foreground)]">
-                      {inv.dueDate ? formatDateAr(inv.dueDate) : "—"}
-                    </td>
-                    <td className="py-2.5 text-end tabular-nums">
-                      {formatSAR(inv.total)}
-                    </td>
-                    <td className="py-2.5 text-end tabular-nums">
-                      {formatSAR(inv.amountPaid)}
-                    </td>
-                    <td className="py-2.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="font-semibold text-sm">
+                          {inv.number}
+                        </div>
+                        <div className="text-sm truncate">
+                          {customerName(inv.customerId)}
+                        </div>
+                      </div>
                       <StatusPill
                         status={inv.status}
                         label={INVOICE_STATUS_LABELS_AR[inv.status]}
                         size="sm"
                       />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-2 text-xs text-[var(--muted-foreground)]">
+                      <span>
+                        إصدار: {formatDateAr(inv.issueDate)}
+                        {inv.dueDate
+                          ? ` · استحقاق: ${formatDateAr(inv.dueDate)}`
+                          : ""}
+                      </span>
+                      <span className="font-semibold tabular-nums text-[var(--foreground)]">
+                        {formatSAR(inv.total)}
+                      </span>
+                    </div>
+                    {Number(inv.amountPaid) > 0 ? (
+                      <div className="mt-1 text-xs text-[var(--muted-foreground)] tabular-nums">
+                        مدفوع: {formatSAR(inv.amountPaid)}
+                      </div>
+                    ) : null}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </section>
     </main>

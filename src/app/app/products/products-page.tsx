@@ -214,8 +214,17 @@ export function ProductsPage({ canManage }: Props) {
                   {products.map((p) => (
                     <tr
                       key={p.id}
-                      className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-black/4"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`المنتج ${p.name}`}
+                      className="cursor-pointer border-b border-[var(--border)] last:border-b-0 hover:bg-black/4 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring,#0ea5e9)]"
                       onClick={() => openProduct(p.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          openProduct(p.id);
+                        }
+                      }}
                     >
                       <td className="py-4 pe-4 font-mono text-xs">{p.code}</td>
                       <td className="px-4 py-4 font-medium">{p.name}</td>
