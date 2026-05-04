@@ -208,6 +208,10 @@ model Factory {
   quoteLines        QuoteLine[]
   vendors           Vendor[]
   products          Product[]
+  invoices          Invoice[]
+  creditNotes       CreditNote[]
+  taxNumber         String?
+  address           String?
 }
 
 model User {
@@ -247,6 +251,8 @@ model User {
   inquiriesConverted      Inquiry[]              @relation("InquiryConvertedBy")
   vendorsCreated          Vendor[]               @relation("VendorCreatedBy")
   productsCreated         Product[]              @relation("ProductCreatedBy")
+  invoicesCreated         Invoice[]              @relation("InvoiceCreatedBy")
+  creditNotesCreated      CreditNote[]           @relation("CreditNoteCreatedBy")
 
   @@index([factoryId, role])
 }
@@ -301,11 +307,14 @@ model Customer {
   phone                  String?
   city                   String?
   district               String?
+  taxNumber              String?
+  address                String?
   notes                  String?
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   factory                Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   orders                 Order[]
+  invoices               Invoice[]
   convertedFromInquiries Inquiry[] @relation("InquiryConvertedCustomer")
 
   @@index([factoryId, name])
@@ -338,6 +347,7 @@ model Order {
   assignments            Assignment[]
   projects               Project[]
   quotes                 Quote[]
+  invoices               Invoice[]
   convertedFromInquiries Inquiry[]          @relation("InquiryConvertedOrder")
 
   @@unique([factoryId, code])
@@ -774,6 +784,7 @@ model Quote {
   createdBy  User?       @relation("QuoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   approvedBy User?       @relation("QuoteApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   lines      QuoteLine[]
+  invoices   Invoice[]
 
   @@unique([orderId, version])
   @@index([factoryId, status, orderId])
@@ -911,4 +922,165 @@ model ProductVariant {
 
   @@unique([productId, code])
   @@index([productId, isActive])
+}
+
+// ────────────────────────────────────────────────────────────
+// Invoices
+// ────────────────────────────────────────────────────────────
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  VOID
+}
+
+model Invoice {
+  id        String  @id @default(cuid())
+  factoryId String
+  customerId String
+  orderId   String? // optional — invoice can stand alone or be tied to an order
+  quoteId   String? // source quote (immutable reference)
+  number    String // human-readable, sequential per factory (e.g. "INV-2026-00042")
+  numberSeq Int // raw sequence; for advisory-lock generation
+
+  status InvoiceStatus @default(DRAFT)
+
+  issueDate    DateTime  @default(now())
+  dueDate      DateTime?
+  sentAt       DateTime?
+  voidedAt     DateTime?
+  voidedReason String?
+
+  // Pricing — snapshot from Quote at generation time
+  currency       String  @default("SAR")
+  taxRate        Decimal @default(15.00) @db.Decimal(5, 2)
+  taxInclusive   Boolean @default(false)
+  subtotal       Decimal @default(0) @db.Decimal(14, 2)
+  discountAmount Decimal @default(0) @db.Decimal(14, 2)
+  taxAmount      Decimal @default(0) @db.Decimal(14, 2)
+  total          Decimal @default(0) @db.Decimal(14, 2)
+  amountPaid     Decimal @default(0) @db.Decimal(14, 2) // running total of allocated payments
+
+  // Snapshot of seller (Factory) and buyer (Customer) at invoice issue time
+  // Useful when factory/customer data changes later
+  sellerNameSnapshot      String?
+  sellerTaxNumberSnapshot String?
+  sellerAddressSnapshot   String?
+  buyerNameSnapshot       String?
+  buyerTaxNumberSnapshot  String?
+  buyerAddressSnapshot    String?
+
+  notes         String?
+  internalNotes String?
+
+  // Soft delete + audit
+  deletedAt   DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  factory     Factory       @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  customer    Customer      @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  order       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  quote       Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  createdBy   User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  lines       InvoiceLine[]
+  creditNotes CreditNote[]
+
+  @@unique([factoryId, number])
+  @@index([factoryId, status, dueDate])
+  @@index([factoryId, customerId, issueDate])
+  @@index([factoryId, deletedAt])
+}
+
+model InvoiceLine {
+  id        String @id @default(cuid())
+  invoiceId String
+  sortOrder Int    @default(0)
+
+  // Snapshot fields (immutable copy at time of generation)
+  description String
+  sku         String?
+  quantity    Decimal @db.Decimal(14, 4)
+  unitPrice   Decimal @db.Decimal(14, 4)
+  lineTotal   Decimal @db.Decimal(14, 2)
+
+  // Optional traceability back to source line
+  productId   String? // not enforced as FK (snapshot, product may be deleted)
+  quoteLineId String? // not enforced as FK
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([invoiceId, sortOrder])
+}
+
+// ────────────────────────────────────────────────────────────
+// Credit Notes (for refunds, returns, partial reversals)
+// ────────────────────────────────────────────────────────────
+enum CreditNoteStatus {
+  DRAFT
+  ISSUED
+  VOID
+}
+
+model CreditNote {
+  id        String @id @default(cuid())
+  factoryId String
+  invoiceId String
+  number    String // sequential per factory: "CN-2026-00001"
+  numberSeq Int
+
+  status CreditNoteStatus @default(DRAFT)
+
+  reason String // why issued (return, cancellation, billing error)
+
+  currency  String  @default("SAR")
+  taxRate   Decimal @default(15.00) @db.Decimal(5, 2)
+  subtotal  Decimal @default(0) @db.Decimal(14, 2)
+  taxAmount Decimal @default(0) @db.Decimal(14, 2)
+  total     Decimal @default(0) @db.Decimal(14, 2)
+
+  issuedAt DateTime?
+  voidedAt DateTime?
+
+  // Soft delete + audit
+  deletedAt   DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  factory   Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  invoice   Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  createdBy User?            @relation("CreditNoteCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  lines     CreditNoteLine[]
+
+  @@unique([factoryId, number])
+  @@index([factoryId, invoiceId])
+  @@index([factoryId, status, issuedAt])
+}
+
+model CreditNoteLine {
+  id           String @id @default(cuid())
+  creditNoteId String
+  sortOrder    Int    @default(0)
+
+  description String
+  quantity    Decimal @db.Decimal(14, 4)
+  unitPrice   Decimal @db.Decimal(14, 4)
+  lineTotal   Decimal @db.Decimal(14, 2)
+
+  // Optional reference back to invoice line being credited
+  invoiceLineId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId, sortOrder])
 }
