@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ORDER_STATUS_LABELS } from "@/modules/orders/order-status";
@@ -53,6 +54,17 @@ export default async function PortalOrderPage({ params }: PageProps) {
   }
 
   const canApprove = detail.order.status === "QUOTED";
+
+  // Fetch visible invoices count for this order (SENT/PARTIALLY_PAID/PAID/OVERDUE only).
+  let invoicesSummary: { count: number } | null = null;
+  try {
+    const invDetail = await portalService.getInvoicesForToken(token);
+    if (invDetail && invDetail.invoices.length > 0) {
+      invoicesSummary = { count: invDetail.invoices.length };
+    }
+  } catch {
+    invoicesSummary = null;
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-6 py-10">
@@ -138,6 +150,25 @@ export default async function PortalOrderPage({ params }: PageProps) {
               </div>
             </div>
           </article>
+
+          {invoicesSummary && (
+            <article className="panel">
+              <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
+                الفواتير
+              </p>
+              <div className="mt-4 flex items-center justify-between">
+                <p className="text-sm text-[var(--muted-foreground)]">
+                  عدد الفواتير: <span className="font-semibold text-[var(--foreground)]">{invoicesSummary.count}</span>
+                </p>
+                <Link
+                  href={`/portal/${token}/invoices`}
+                  className="text-sm font-semibold text-[var(--accent)] hover:underline"
+                >
+                  عرض الفواتير ←
+                </Link>
+              </div>
+            </article>
+          )}
 
           <article className="panel">
             <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
