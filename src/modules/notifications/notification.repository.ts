@@ -1,6 +1,10 @@
 import "server-only";
 
-import { AssignmentStatus, NotificationStatus, OrderStatus } from "@prisma/client";
+import {
+  AssignmentStatus,
+  NotificationStatus,
+  OrderStatus,
+} from "@prisma/client";
 
 import { db } from "@/lib/db";
 import { OPEN_INQUIRY_STAGE_VALUES } from "@/modules/crm/inquiry-stage";
@@ -140,8 +144,24 @@ export class NotificationRepository {
     });
   }
 
-  async syncForUser(factoryId: string, userId: string, drafts: NotificationDraft[]) {
+  async syncForUser(
+    factoryId: string,
+    userId: string,
+    drafts: NotificationDraft[],
+  ) {
     const activeKeys = drafts.map((draft) => draft.dedupeKey);
+    // Only auto-resolve notifications whose `type` is among those that
+    // buildDrafts() manages (i.e. recomputed from current state on every
+    // sync). Persistent business-event notifications (INVOICE_PAID,
+    // QUOTE_APPROVED, PAYMENT_RECEIVED, etc.) are written by emitters
+    // and should NOT be touched here — otherwise they get auto-resolved
+    // on the very next /api/v1/notifications GET.
+    const MANAGED_DRAFT_TYPES = [
+      "ORDER_OVERDUE",
+      "CRM_FOLLOW_UP_DUE",
+      "ASSIGNMENT_BLOCKED",
+      "CUSTOMER_APPROVAL_PENDING",
+    ];
     const [matchingRecords, unresolvedRecords] = await Promise.all([
       activeKeys.length === 0
         ? Promise.resolve([])
@@ -159,6 +179,7 @@ export class NotificationRepository {
           factoryId,
           userId,
           resolvedAt: null,
+          type: { in: MANAGED_DRAFT_TYPES as never },
         },
         select: {
           id: true,
@@ -168,7 +189,10 @@ export class NotificationRepository {
     ]);
 
     const matchingByKey = new Map(
-      matchingRecords.map((notification) => [notification.dedupeKey, notification])
+      matchingRecords.map((notification) => [
+        notification.dedupeKey,
+        notification,
+      ]),
     );
     const now = new Date();
 
@@ -206,7 +230,9 @@ export class NotificationRepository {
             entityId: draft.entityId ?? null,
             resolvedAt: null,
             status:
-              existing.resolvedAt != null ? NotificationStatus.UNREAD : existing.status,
+              existing.resolvedAt != null
+                ? NotificationStatus.UNREAD
+                : existing.status,
             readAt: existing.resolvedAt != null ? null : existing.readAt,
           },
         });
@@ -231,14 +257,21 @@ export class NotificationRepository {
     });
   }
 
-  async listActiveByUser(factoryId: string, userId: string): Promise<NotificationListItem[]> {
+  async listActiveByUser(
+    factoryId: string,
+    userId: string,
+  ): Promise<NotificationListItem[]> {
     const notifications = await db.notification.findMany({
       where: {
         factoryId,
         userId,
         resolvedAt: null,
       },
-      orderBy: [{ status: "asc" }, { updatedAt: "desc" }, { createdAt: "desc" }],
+      orderBy: [
+        { status: "asc" },
+        { updatedAt: "desc" },
+        { createdAt: "desc" },
+      ],
     });
 
     return notifications.map(toNotificationListItem);
