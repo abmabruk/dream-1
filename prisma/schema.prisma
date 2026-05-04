@@ -206,6 +206,8 @@ model Factory {
   auditLogs         AuditLog[]
   quotes            Quote[]
   quoteLines        QuoteLine[]
+  vendors           Vendor[]
+  products          Product[]
 }
 
 model User {
@@ -243,6 +245,8 @@ model User {
   quotesCreated           Quote[]                @relation("QuoteCreatedBy")
   quotesApproved          Quote[]                @relation("QuoteApprovedBy")
   inquiriesConverted      Inquiry[]              @relation("InquiryConvertedBy")
+  vendorsCreated          Vendor[]               @relation("VendorCreatedBy")
+  productsCreated         Product[]              @relation("ProductCreatedBy")
 
   @@index([factoryId, role])
 }
@@ -571,6 +575,7 @@ model ProjectCost {
   stageInstanceId String?
   locationId      String?
   quoteLineId     String?
+  vendorId        String?
   factory         Factory               @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   project         Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
   task            ProjectTask?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
@@ -578,12 +583,14 @@ model ProjectCost {
   stageInstance   ProjectStageInstance? @relation(fields: [stageInstanceId], references: [id], onDelete: SetNull)
   location        Location?             @relation(fields: [locationId], references: [id], onDelete: SetNull)
   quoteLine       QuoteLine?            @relation(fields: [quoteLineId], references: [id], onDelete: SetNull)
+  vendor          Vendor?               @relation("VendorCosts", fields: [vendorId], references: [id], onDelete: SetNull)
 
   @@index([factoryId, projectId, incurredAt])
   @@index([factoryId, category])
   @@index([taskId])
   @@index([locationId])
   @@index([quoteLineId])
+  @@index([vendorId])
 }
 
 model TaskAttachment {
@@ -791,11 +798,117 @@ model QuoteLine {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  factory Factory @relation(fields: [factoryId], references: [id], onDelete: Cascade)
-  quote   Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  factory Factory  @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product? @relation("QuoteLineProduct", fields: [productId], references: [id], onDelete: SetNull)
 
   costs ProjectCost[]
 
   @@index([quoteId, sortOrder])
   @@index([factoryId, productId])
+}
+
+// ────────────────────────────────────────────────────────────
+// Vendors (suppliers)
+// ────────────────────────────────────────────────────────────
+model Vendor {
+  id                String  @id @default(cuid())
+  factoryId         String
+  name              String
+  normalizedName    String // LOWER(TRIM(REGEXP_REPLACE(name, '\s+', ' ', 'g'))) — for dedup
+  code              String? // optional internal code
+  taxNumber         String? // VAT number
+  email             String?
+  phone             String?
+  website           String?
+  address           String?
+  city              String?
+  paymentTermsDays  Int? // typical net days (30, 60, etc.)
+  preferredCurrency String? // default null = factory currency
+  notes             String?
+
+  // Soft delete + audit
+  deletedAt   DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  factory   Factory         @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  createdBy User?           @relation("VendorCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  contacts  VendorContact[]
+  costs     ProjectCost[]   @relation("VendorCosts")
+
+  @@unique([factoryId, normalizedName])
+  @@index([factoryId, deletedAt])
+  @@index([factoryId, code])
+}
+
+model VendorContact {
+  id        String   @id @default(cuid())
+  vendorId  String
+  name      String
+  role      String? // e.g. "مدير المبيعات"
+  email     String?
+  phone     String?
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vendor Vendor @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+
+  @@index([vendorId])
+}
+
+// ────────────────────────────────────────────────────────────
+// Products (catalog)
+// ────────────────────────────────────────────────────────────
+model Product {
+  id          String   @id @default(cuid())
+  factoryId   String
+  code        String // SKU — unique per factory
+  name        String
+  description String?
+  category    String? // free-text for now (proper category tree later if needed)
+  tags        String[] @default([])
+
+  // Pricing
+  defaultUnitPrice  Decimal @default(0) @db.Decimal(14, 4) // sell price
+  estimatedUnitCost Decimal @default(0) @db.Decimal(14, 4) // baseline cost for margin estimates
+  currency          String  @default("SAR")
+
+  // Stock (basic — full inventory later)
+  lowStockThreshold Int? // alert threshold; null = don't track
+
+  // Soft delete + audit
+  deletedAt   DateTime?
+  createdById String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  factory    Factory          @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  createdBy  User?            @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  variants   ProductVariant[]
+  quoteLines QuoteLine[]      @relation("QuoteLineProduct")
+
+  @@unique([factoryId, code])
+  @@index([factoryId, deletedAt])
+  @@index([factoryId, category])
+}
+
+model ProductVariant {
+  id                     String   @id @default(cuid())
+  productId              String
+  code                   String // variant SKU suffix
+  name                   String // e.g. "أحمر / كبير"
+  attributes             Json     @default("{}") // {color: "red", size: "L"}
+  unitPriceDelta         Decimal  @default(0) @db.Decimal(14, 4) // adds to product.defaultUnitPrice
+  estimatedUnitCostDelta Decimal  @default(0) @db.Decimal(14, 4)
+  isActive               Boolean  @default(true)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, code])
+  @@index([productId, isActive])
 }
