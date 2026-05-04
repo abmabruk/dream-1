@@ -209,6 +209,7 @@ model Factory {
   products          Product[]
   invoices          Invoice[]
   creditNotes       CreditNote[]
+  payments          Payment[]
   taxNumber         String?
   address           String?
 }
@@ -251,6 +252,7 @@ model User {
   productsCreated         Product[]              @relation("ProductCreatedBy")
   invoicesCreated         Invoice[]              @relation("InvoiceCreatedBy")
   creditNotesCreated      CreditNote[]           @relation("CreditNoteCreatedBy")
+  paymentsRecorded        Payment[]              @relation("PaymentRecordedBy")
 
   @@index([factoryId, role])
 }
@@ -313,6 +315,7 @@ model Customer {
   factory                Factory   @relation(fields: [factoryId], references: [id], onDelete: Cascade)
   orders                 Order[]
   invoices               Invoice[]
+  payments               Payment[]
   convertedFromInquiries Inquiry[] @relation("InquiryConvertedCustomer")
 
   @@index([factoryId, name])
@@ -955,8 +958,9 @@ model Invoice {
   order       Order?        @relation(fields: [orderId], references: [id], onDelete: SetNull)
   quote       Quote?        @relation(fields: [quoteId], references: [id], onDelete: SetNull)
   createdBy   User?         @relation("InvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  lines       InvoiceLine[]
-  creditNotes CreditNote[]
+  lines              InvoiceLine[]
+  creditNotes        CreditNote[]
+  paymentAllocations PaymentAllocation[]
 
   @@unique([factoryId, number])
   @@index([factoryId, status, dueDate])
@@ -1052,4 +1056,64 @@ model CreditNoteLine {
   creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
 
   @@index([creditNoteId, sortOrder])
+}
+
+// ────────────────────────────────────────────────────────────
+// Payments (manual entry only — no online gateway)
+// ────────────────────────────────────────────────────────────
+enum PaymentKind {
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+}
+
+enum PaymentMethod {
+  CASH
+  BANK_TRANSFER
+  CHECK
+  CARD
+  OTHER
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  factoryId    String
+  customerId   String
+  kind         PaymentKind   @default(PAYMENT)
+  method       PaymentMethod @default(BANK_TRANSFER)
+  reference    String?       // bank reference, check number, etc.
+  receivedAt   DateTime      @default(now())
+  amount       Decimal       @db.Decimal(14, 2)
+  currency     String        @default("SAR")
+  notes        String?
+
+  // Soft delete + audit
+  deletedAt    DateTime?
+  recordedById String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  factory     Factory             @relation(fields: [factoryId], references: [id], onDelete: Cascade)
+  customer    Customer            @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  recordedBy  User?               @relation("PaymentRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
+  allocations PaymentAllocation[]
+
+  @@index([factoryId, customerId, receivedAt])
+  @@index([factoryId, kind, receivedAt])
+  @@index([factoryId, deletedAt])
+}
+
+model PaymentAllocation {
+  id        String   @id @default(cuid())
+  paymentId String
+  invoiceId String
+  amount    Decimal  @db.Decimal(14, 2)
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, invoiceId])
+  @@index([invoiceId])
+  @@index([paymentId])
 }
