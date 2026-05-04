@@ -5,6 +5,7 @@ import { CollapsibleSidebar } from "./_components/collapsible-sidebar";
 import { ToastProvider } from "@/components/ui";
 import { CommandPalette } from "@/components/ui/CommandPalette";
 import { QuickAdd } from "@/components/ui/QuickAdd";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { hasPermission } from "@/modules/auth/roles";
 import { requireSession } from "@/modules/auth/session";
 import { getNotificationFeedCached } from "@/modules/notifications/notification.service";
@@ -248,7 +249,13 @@ export default async function AppLayout({
               بوابة العميل
             </Link>
           </nav>
-          <form action={signOutAction} className="mt-8">
+          <div className="mt-8">
+            <p className="mb-2 px-1 text-[0.7rem] uppercase tracking-[0.2em] text-[var(--muted-foreground)]">
+              المظهر
+            </p>
+            <ThemeToggle />
+          </div>
+          <form action={signOutAction} className="mt-4">
             <button className="button-secondary w-full" type="submit">
               تسجيل الخروج
             </button>

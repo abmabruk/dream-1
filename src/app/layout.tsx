@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
+import { ThemeProvider, ThemeScript } from "@/components/theme-provider";
 
 const ibmPlexArabic = IBM_Plex_Sans_Arabic({
   subsets: ["arabic"],
@@ -26,8 +27,14 @@ export default function RootLayout({
       lang="ar"
       dir="rtl"
       className={`${ibmPlexArabic.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col" suppressHydrationWarning>{children}</body>
+      <head>
+        <ThemeScript />
+      </head>
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

@@ -7,34 +7,34 @@
 :root {
   /* ── Status tones (light) ─────────────────────────────────────────────── */
   /* draft / backlog — muted gray */
-  --tone-draft-bg: rgba(120, 113, 108, 0.10);
+  --tone-draft-bg: rgba(120, 113, 108, 0.1);
   --tone-draft-fg: #57534e;
   --tone-draft-border: rgba(120, 113, 108, 0.28);
 
   /* planned / approved / ready — cool blue */
-  --tone-planned-bg: rgba(37, 99, 235, 0.10);
+  --tone-planned-bg: rgba(37, 99, 235, 0.1);
   --tone-planned-fg: #1d4ed8;
-  --tone-planned-border: rgba(37, 99, 235, 0.30);
+  --tone-planned-border: rgba(37, 99, 235, 0.3);
 
   /* in-progress — teal (matches existing accent) */
   --tone-in-progress-bg: rgba(15, 118, 110, 0.12);
   --tone-in-progress-fg: #0f766e;
-  --tone-in-progress-border: rgba(15, 118, 110, 0.30);
+  --tone-in-progress-border: rgba(15, 118, 110, 0.3);
 
   /* waiting / quality — amber */
   --tone-waiting-bg: rgba(217, 119, 6, 0.12);
   --tone-waiting-fg: #b45309;
-  --tone-waiting-border: rgba(217, 119, 6, 0.30);
+  --tone-waiting-border: rgba(217, 119, 6, 0.3);
 
   /* blocked / on-hold — red */
-  --tone-blocked-bg: rgba(220, 38, 38, 0.10);
+  --tone-blocked-bg: rgba(220, 38, 38, 0.1);
   --tone-blocked-fg: #b91c1c;
-  --tone-blocked-border: rgba(220, 38, 38, 0.30);
+  --tone-blocked-border: rgba(220, 38, 38, 0.3);
 
   /* done / completed — deep emerald */
-  --tone-done-bg: rgba(5, 150, 105, 0.10);
+  --tone-done-bg: rgba(5, 150, 105, 0.1);
   --tone-done-fg: #047857;
-  --tone-done-border: rgba(5, 150, 105, 0.30);
+  --tone-done-border: rgba(5, 150, 105, 0.3);
 
   /* cancelled — faded gray */
   --tone-cancelled-bg: rgba(120, 113, 108, 0.06);
@@ -52,34 +52,106 @@
   --stale-hard: rgba(220, 38, 38, 0.65);
 }
 
-/* Dark-mode auto-switch was removed intentionally (locked to light theme).
-   The status tones above are tuned for white backgrounds and stay consistent
-   regardless of the user's OS preference. */
+/* ── Dark theme overrides (Phase 7 opt-in) ─────────────────────────────────
+   Applied when <html class="dark"> is present. Light remains the default;
+   dark mode is opt-in via the sidebar toggle. The customer portal stays
+   light-only — see globals.css. */
+.dark {
+  /* draft / backlog */
+  --tone-draft-bg: rgba(168, 162, 158, 0.14);
+  --tone-draft-fg: #d6d3d1;
+  --tone-draft-border: rgba(168, 162, 158, 0.3);
+
+  /* planned / approved / ready */
+  --tone-planned-bg: rgba(96, 165, 250, 0.16);
+  --tone-planned-fg: #93c5fd;
+  --tone-planned-border: rgba(96, 165, 250, 0.36);
+
+  /* in-progress */
+  --tone-in-progress-bg: rgba(20, 184, 166, 0.18);
+  --tone-in-progress-fg: #5eead4;
+  --tone-in-progress-border: rgba(20, 184, 166, 0.4);
+
+  /* waiting / quality */
+  --tone-waiting-bg: rgba(245, 158, 11, 0.18);
+  --tone-waiting-fg: #fbbf24;
+  --tone-waiting-border: rgba(245, 158, 11, 0.4);
+
+  /* blocked / on-hold */
+  --tone-blocked-bg: rgba(248, 113, 113, 0.16);
+  --tone-blocked-fg: #fca5a5;
+  --tone-blocked-border: rgba(248, 113, 113, 0.4);
+
+  /* done / completed */
+  --tone-done-bg: rgba(52, 211, 153, 0.16);
+  --tone-done-fg: #6ee7b7;
+  --tone-done-border: rgba(52, 211, 153, 0.4);
+
+  /* cancelled */
+  --tone-cancelled-bg: rgba(120, 113, 108, 0.1);
+  --tone-cancelled-fg: #78716c;
+  --tone-cancelled-border: rgba(120, 113, 108, 0.24);
+
+  /* priority accents */
+  --priority-low: #78716c;
+  --priority-medium: #5eead4;
+  --priority-high: #fbbf24;
+  --priority-urgent: #fca5a5;
+
+  /* stale */
+  --stale-soft: rgba(251, 191, 36, 0.65);
+  --stale-hard: rgba(252, 165, 165, 0.75);
+}
 
 /* ── Animations ────────────────────────────────────────────────────────── */
 @keyframes ds-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.55; transform: scale(1.18); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(1.18);
+  }
 }
 
 @keyframes ds-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 @keyframes ds-toast-in {
-  from { transform: translateY(12px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 @keyframes ds-sheet-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
 }
 
 @keyframes ds-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 /* ── Skeleton shimmer base ─────────────────────────────────────────────── */
@@ -94,18 +166,29 @@
   animation: ds-shimmer 1.4s ease-in-out infinite;
 }
 
-
 /* ── Stale-task pulse (issue #6) ───────────────────────────────────────── */
 @keyframes ds-stale-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--tone-blocked-fg) 26%, transparent); }
-  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone-blocked-fg) 14%, transparent); }
+  0%,
+  100% {
+    box-shadow: 0 0 0 0
+      color-mix(in srgb, var(--tone-blocked-fg) 26%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 0 4px
+      color-mix(in srgb, var(--tone-blocked-fg) 14%, transparent);
+  }
 }
 .ds-stale-hard {
   animation: ds-stale-pulse 2.6s ease-in-out infinite;
 }
 
-
 @keyframes ds-toast-slide-in {
-  from { transform: translateY(-12px); opacity: 0; }
-  to   { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
