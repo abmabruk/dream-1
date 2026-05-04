@@ -28,7 +28,11 @@ export class OrderRepository {
     }));
   }
 
-  async create(factoryId: string, createdById: string, input: CreateOrderInput) {
+  async create(
+    factoryId: string,
+    createdById: string,
+    input: CreateOrderInput,
+  ) {
     const factory = await db.factory.findUnique({
       where: { id: factoryId },
       select: {
@@ -40,10 +44,14 @@ export class OrderRepository {
       throw new Error("Factory not found.");
     }
 
-    const count = await db.order.count({ where: { factoryId } });
-    const code = `${factory.orderCodePrefix}-${String(count + 1).padStart(5, "0")}`;
-
     return db.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        `order_code:${factoryId}`,
+      );
+      const count = await tx.order.count({ where: { factoryId } });
+      const code = `${factory.orderCodePrefix}-${String(count + 1).padStart(5, "0")}`;
+
       const order = await tx.order.create({
         data: {
           factoryId,
@@ -72,7 +80,10 @@ export class OrderRepository {
     });
   }
 
-  async getById(factoryId: string, orderId: string): Promise<OrderDetail | null> {
+  async getById(
+    factoryId: string,
+    orderId: string,
+  ): Promise<OrderDetail | null> {
     const order = await db.order.findFirst({
       where: {
         id: orderId,
@@ -139,7 +150,8 @@ export class OrderRepository {
         ? {
             id: order.portalAccess.id,
             createdAt: order.portalAccess.createdAt.toISOString(),
-            lastViewedAt: order.portalAccess.lastViewedAt?.toISOString() ?? null,
+            lastViewedAt:
+              order.portalAccess.lastViewedAt?.toISOString() ?? null,
           }
         : null,
       assignments: order.assignments.map((assignment) => ({
@@ -147,7 +159,8 @@ export class OrderRepository {
         station: assignment.station,
         status: assignment.status,
         workerId: assignment.workerId,
-        workerName: `${assignment.worker.firstName} ${assignment.worker.lastName}`.trim(),
+        workerName:
+          `${assignment.worker.firstName} ${assignment.worker.lastName}`.trim(),
         workerRole: assignment.worker.role,
         scheduledFor: assignment.scheduledFor?.toISOString() ?? null,
         notes: assignment.notes,
@@ -185,7 +198,7 @@ export class OrderRepository {
   async updateStatus(
     factoryId: string,
     actorId: string,
-    input: UpdateOrderStatusInput
+    input: UpdateOrderStatusInput,
   ) {
     return db.$transaction(async (tx) => {
       const existing = await tx.order.findFirst({
@@ -209,8 +222,7 @@ export class OrderRepository {
             input.status === "APPROVED" && !existing.approvedAt
               ? new Date()
               : existing.approvedAt,
-          deliveredAt:
-            input.status === "DELIVERED" ? new Date() : null,
+          deliveredAt: input.status === "DELIVERED" ? new Date() : null,
         },
       });
 
@@ -238,7 +250,7 @@ export class OrderRepository {
       actorId: string;
       type: "ASSIGNMENT_CREATED" | "ASSIGNMENT_STATUS_CHANGED";
       note?: string | null;
-    }
+    },
   ) {
     return tx.orderEvent.create({
       data: {

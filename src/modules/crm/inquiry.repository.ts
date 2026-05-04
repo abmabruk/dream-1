@@ -83,6 +83,10 @@ export class InquiryRepository {
     input: ConvertInquiryInputType,
   ) {
     return db.$transaction(async (tx) => {
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        `order_code:${factoryId}`,
+      );
       const inquiry = await tx.inquiry.findFirst({
         where: { id: inquiryId, factoryId },
       });

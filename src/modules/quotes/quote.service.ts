@@ -337,6 +337,10 @@ export class QuoteService {
         quoteId,
       )) as RawQuote | null;
       if (!existing) throw new HttpError(404, "عرض السعر غير موجود.");
+      await tx.$executeRawUnsafe(
+        `SELECT pg_advisory_xact_lock(hashtext($1))`,
+        `quote_approve:${existing.orderId}`,
+      );
       if (existing.status !== "DRAFT" && existing.status !== "SENT") {
         throw new HttpError(409, "حالة غير صالحة للعملية");
       }
@@ -774,7 +778,6 @@ export class QuoteService {
     total: Prisma.Decimal;
   } {
     const linesSum = sumMoney(args.lines.map((l) => l.lineTotal));
-    // Subtotal = sum(line totals) - discount, floored at 0 to prevent negatives.
     let preTax = roundMoney(linesSum.minus(args.discountAmount));
     if (preTax.lt(0)) preTax = new Prisma.Decimal(0);
     const breakdown = computeTax(
@@ -782,8 +785,15 @@ export class QuoteService {
       args.taxRate,
       args.taxInclusive ? "inclusive" : "exclusive",
     );
+    // For exclusive tax: subtotal is the gross sum of line totals (pre-discount),
+    // so callers can render "subtotal - discount + tax = total".
+    // For inclusive tax: subtotal is the tax-extracted pre-tax amount (legacy
+    // behavior that callers and reports rely on).
+    const subtotal = args.taxInclusive
+      ? breakdown.subtotal
+      : roundMoney(linesSum);
     return {
-      subtotal: breakdown.subtotal,
+      subtotal,
       taxAmount: breakdown.taxAmount,
       total: breakdown.total,
     };
