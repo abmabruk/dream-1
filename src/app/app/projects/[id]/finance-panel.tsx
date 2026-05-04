@@ -26,7 +26,7 @@ import {
 } from "@/modules/finance/cost.schemas";
 import type { StageInstanceItem } from "@/modules/projects/project.schemas";
 
-import { AddCostDialog } from "./add-cost-dialog";
+import { AddCostDialog, type AvailableQuoteLine } from "./add-cost-dialog";
 
 interface FinancePanelProps {
   projectId: string;
@@ -36,6 +36,8 @@ interface FinancePanelProps {
   stageInstances?: StageInstanceItem[];
   defaultStageInstanceId?: string | null;
   locations?: { id: string; name: string; code: string | null }[];
+  /** Order this project belongs to — used to fetch APPROVED quote lines for linking. */
+  orderId?: string | null;
 }
 
 // Stage palette — uses accent variations so charts stay on-brand without
@@ -71,6 +73,7 @@ export function FinancePanel({
   stageInstances = [],
   defaultStageInstanceId = null,
   locations = [],
+  orderId = null,
 }: FinancePanelProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -78,6 +81,7 @@ export function FinancePanel({
   const [summary, setSummary] = useState<ProjectCostSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
+  const [availableQuoteLines, setAvailableQuoteLines] = useState<AvailableQuoteLine[]>([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -102,6 +106,68 @@ export function FinancePanel({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Fetch APPROVED quote lines for this project's parent order so the
+  // user can optionally link a cost to a specific quote line. Failures
+  // are silent — the dropdown simply hides if no lines are available.
+  useEffect(() => {
+    if (!orderId) {
+      setAvailableQuoteLines([]);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/v1/orders/${orderId}/quotes`, {
+          cache: "no-store",
+        });
+        if (!r.ok) return;
+        const json = await r.json();
+        if (!json?.ok) return;
+        const quotes = (json.data ?? []) as Array<{
+          id: string;
+          version: number;
+          status: string;
+          lines?: Array<{
+            id: string;
+            description: string;
+            unitPrice: string;
+            quantity: string;
+          }>;
+        }>;
+        const lines: AvailableQuoteLine[] = [];
+        for (const q of quotes) {
+          if (q.status !== "APPROVED") continue;
+          for (const ln of q.lines ?? []) {
+            lines.push({
+              id: ln.id,
+              description: ln.description,
+              quoteVersion: q.version,
+              quoteStatus: q.status,
+              unitPrice: ln.unitPrice,
+              quantity: ln.quantity,
+            });
+          }
+        }
+        if (!cancelled) setAvailableQuoteLines(lines);
+      } catch {
+        // Silent: linking is optional.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [orderId]);
+
+  // Aggregate per-line costs to compute per-line margin (sell - sum(linkedCosts)).
+  const perLineMargin = useMemo(() => {
+    const sumByLine = new Map<string, number>();
+    for (const c of costs) {
+      if (!c.quoteLineId) continue;
+      sumByLine.set(c.quoteLineId, (sumByLine.get(c.quoteLineId) ?? 0) + Number(c.amount));
+    }
+    return sumByLine;
+  }, [costs]);
 
   const handleDelete = useCallback(
     async (costId: string) => {
@@ -395,6 +461,7 @@ export function FinancePanel({
                   <th className="py-2 text-start">الفئة</th>
                   <th className="py-2 text-start">الوصف</th>
                   <th className="py-2 text-start">المورد</th>
+                  <th className="py-2 text-start">البند المرتبط</th>
                   <th className="py-2 text-end">المبلغ</th>
                   {canManageCosts ? (
                     <th className="py-2 text-end">إجراءات</th>
@@ -422,6 +489,37 @@ export function FinancePanel({
                       <td className="py-2.5">{c.description}</td>
                       <td className="py-2.5 text-[var(--muted-foreground)]">
                         {c.vendorName ?? "—"}
+                      </td>
+                      <td className="py-2.5 text-xs text-[var(--muted-foreground)]">
+                        {c.quoteLineId && c.quoteLineDescription ? (
+                          (() => {
+                            const sell = c.quoteLineSellPrice ? Number(c.quoteLineSellPrice) : 0;
+                            const spent = perLineMargin.get(c.quoteLineId) ?? 0;
+                            const margin = sell - spent;
+                            const negative = margin < 0;
+                            return (
+                              <span className="inline-flex flex-col gap-0.5">
+                                <span className="text-[var(--foreground)]">
+                                  {`مرتبطة بـ ${c.quoteLineDescription}${c.quoteVersion ? ` في عرض السعر #v${c.quoteVersion}` : ""}`}
+                                </span>
+                                {sell > 0 ? (
+                                  <span
+                                    className="tabular-nums"
+                                    style={{
+                                      color: negative
+                                        ? "var(--tone-blocked-fg)"
+                                        : "var(--muted-foreground)",
+                                    }}
+                                  >
+                                    {`هامش البند: ${fmtMoney(margin.toFixed(2))} (من ${fmtMoney(sell.toFixed(2))})`}
+                                  </span>
+                                ) : null}
+                              </span>
+                            );
+                          })()
+                        ) : (
+                          "—"
+                        )}
                       </td>
                       <td className="py-2.5 text-end font-semibold tabular-nums">
                         {fmtMoney(c.amount)}
@@ -472,6 +570,7 @@ export function FinancePanel({
           stageInstances={stageInstances}
           defaultStageInstanceId={defaultStageInstanceId}
           locations={locations}
+          availableQuoteLines={availableQuoteLines}
           onClose={() => setShowAdd(false)}
           onCreated={async () => {
             setShowAdd(false);

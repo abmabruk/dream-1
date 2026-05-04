@@ -12,12 +12,22 @@ import { useEffect, useRef, useState } from "react";
 
 import { BottomSheet } from "@/components/ui";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
+import { formatSAR } from "@/lib/format";
 import {
   COST_CATEGORY_LABELS_AR,
   COST_CATEGORY_VALUES,
   type CostCategory,
 } from "@/modules/finance/cost.schemas";
 import type { StageInstanceItem } from "@/modules/projects/project.schemas";
+
+export interface AvailableQuoteLine {
+  id: string;
+  description: string;
+  quoteVersion: number;
+  quoteStatus: string;
+  unitPrice: string;
+  quantity: string;
+}
 
 const STAGE_STATUS_LABELS_AR: Record<string, string> = {
   NOT_STARTED: "لم تبدأ",
@@ -34,6 +44,7 @@ interface AddCostDialogProps {
   stageInstances?: StageInstanceItem[];
   defaultStageInstanceId?: string | null;
   locations?: { id: string; name: string; code: string | null }[];
+  availableQuoteLines?: AvailableQuoteLine[];
   onClose: () => void;
   onCreated: () => void | Promise<void>;
 }
@@ -49,6 +60,7 @@ export function AddCostDialog({
   stageInstances = [],
   defaultStageInstanceId = null,
   locations = [],
+  availableQuoteLines = [],
   onClose,
   onCreated,
 }: AddCostDialogProps) {
@@ -62,6 +74,7 @@ export function AddCostDialog({
     defaultStageInstanceId ?? "",
   );
   const [locationId, setLocationId] = useState<string>("");
+  const [quoteLineId, setQuoteLineId] = useState<string>("");
   const [incurredAt, setIncurredAt] = useState<string>(todayDate());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +119,7 @@ export function AddCostDialog({
           taskId: taskId || undefined,
           stageInstanceId: stageInstanceId || undefined,
           locationId: locationId || undefined,
+          quoteLineId: quoteLineId || undefined,
           incurredAt: new Date(incurredAt).toISOString(),
         }),
       });
@@ -243,6 +257,28 @@ export function AddCostDialog({
                 {l.name}{l.code ? ` · ${l.code}` : ""}
               </option>
             ))}
+          </select>
+        </label>
+      ) : null}
+
+      {availableQuoteLines.length > 0 ? (
+        <label className="block text-sm">
+          اربط ببند عرض سعر (اختياري)
+          <select
+            value={quoteLineId}
+            onChange={(e) => setQuoteLineId(e.target.value)}
+            className="mt-1 w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <option value="">— بدون ربط —</option>
+            {availableQuoteLines.map((l) => {
+              const sell = Number(l.unitPrice) * Number(l.quantity);
+              return (
+                <option key={l.id} value={l.id}>
+                  {`v${l.quoteVersion}: ${l.description} (سعر: ${formatSAR(sell.toFixed(2))})`}
+                </option>
+              );
+            })}
           </select>
         </label>
       ) : null}
