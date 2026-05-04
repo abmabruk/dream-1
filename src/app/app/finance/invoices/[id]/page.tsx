@@ -55,6 +55,7 @@ export default async function InvoiceDetailRoute({
       canIssue={hasPermission(session.role, "invoices:issue")}
       canVoid={hasPermission(session.role, "invoices:void")}
       canCreditNote={hasPermission(session.role, "credit-notes:manage")}
+      canRecordPayment={hasPermission(session.role, "payments:manage")}
     />
   );
 }
