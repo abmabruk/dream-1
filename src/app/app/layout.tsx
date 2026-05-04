@@ -124,8 +124,18 @@ export default async function AppLayout({
             </Link>
           )}
 
-          {/* Admin group: users / settings */}
+          {/* Admin group: users / vendors / products / settings */}
           <hr className="my-3 border-0 border-t border-[var(--border)]" />
+          {hasPermission(session.role, "vendors:view") && (
+            <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/vendors">
+              الموردون
+            </Link>
+          )}
+          {hasPermission(session.role, "products:view") && (
+            <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/products">
+              المنتجات
+            </Link>
+          )}
           {hasPermission(session.role, "users:manage") && (
             <Link className="rounded-2xl px-4 py-3 hover:bg-black/4" href="/app/users">
               المستخدمون
