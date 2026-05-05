@@ -49,3 +49,8 @@ node_modules
 # Local scratch / experimental folders
 /Untitled/
 /.worktrees/
+
+# Claude Code local artifacts
+/.claude/worktrees/
+/.claude/scheduled_tasks.lock
+/.t1-screenshots/
