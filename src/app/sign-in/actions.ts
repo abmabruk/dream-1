@@ -1,5 +1,6 @@
 "use server";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import {
@@ -7,6 +8,16 @@ import {
   clearSignInAttempts,
   recordFailedSignIn,
 } from "@/lib/rate-limit";
+import { rateLimit } from "@/lib/security/rate-limit";
+
+async function getClientIp(): Promise<string> {
+  const h = await headers();
+  return (
+    h.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    h.get("x-real-ip") ||
+    "unknown"
+  );
+}
 import { AuthService } from "@/modules/auth/auth.service";
 
 import type { SignInActionState, Totp2faActionState } from "./state";
@@ -46,6 +57,17 @@ export async function signInAction(
   );
 
   const rateKey = email.toLowerCase().trim();
+
+  const ipRl = rateLimit(`signin:ip:${await getClientIp()}`, {
+    max: 20,
+    windowMs: 15 * 60 * 1000,
+  });
+  if (!ipRl.ok) {
+    return {
+      error:
+        "تم تجاوز المحاولات المسموحة من هذا الجهاز، الرجاء المحاولة لاحقاً.",
+    };
+  }
 
   const rl = checkSignInRateLimit(rateKey);
   if (!rl.ok) {

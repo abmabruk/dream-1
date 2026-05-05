@@ -20,16 +20,22 @@ export async function register() {
 }
 
 function scrubEvent<T>(event: T): T {
-  // Recursively redact sensitive fields. Pino redaction handles logs;
-  // this catches anything that bubbles up to Sentry.
   const SECRET_KEYS =
-    /^(password|passwordhash|token|tokenhash|authorization|cookie|auth_secret|database_url|secret)$/i;
+    /^(password|passwordhash|token|tokenhash|authorization|cookie|auth_secret|database_url|secret|portaltoken|recoverycodes|totpsecret)$/i;
+  const PII_KEYS = /^(email|phone|mobile|taxnumber|nationalid)$/i;
+  const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
+  const PHONE_RE = /\+?\d[\d\s-]{7,}\d/g;
+  const scrubString = (s: string): string =>
+    s.replace(EMAIL_RE, "[EMAIL]").replace(PHONE_RE, "[PHONE]");
   const scrub = (obj: unknown): unknown => {
+    if (typeof obj === "string") return scrubString(obj);
     if (Array.isArray(obj)) return obj.map(scrub);
     if (obj && typeof obj === "object") {
       const out: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
-        out[k] = SECRET_KEYS.test(k) ? "[REDACTED]" : scrub(v);
+        if (SECRET_KEYS.test(k)) out[k] = "[REDACTED]";
+        else if (PII_KEYS.test(k)) out[k] = "[PII]";
+        else out[k] = scrub(v);
       }
       return out;
     }
