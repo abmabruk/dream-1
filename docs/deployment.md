@@ -90,6 +90,7 @@ Vercel يقرأ `vercel.json` تلقائياً:
 
 - `/api/cron/invoice-overdue` — يومياً ٦ص UTC (يُعلّم الفواتير المتأخرة + ينبّه المحاسبين)
 - `/api/cron/quote-expiry` — يومياً ٧ص UTC (يحوّل عروض السعر منتهية الصلاحية لـEXPIRED + ينبّه)
+- `/api/cron/audit-retention` — شهرياً (اليوم ١، ٣ص UTC) — يحذف entries من AuditLog أقدم من ٢٤ شهر
 
 كلاهما يحتاج `CRON_SECRET` معيّن في Vercel envs.
 
