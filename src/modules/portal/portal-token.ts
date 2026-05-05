@@ -13,7 +13,9 @@ const portalTokenSchema = z.object({
 
 function getSecret() {
   if (!env.AUTH_SECRET || env.AUTH_SECRET.length < 32) {
-    throw new Error("AUTH_SECRET must be configured before using portal links.");
+    throw new Error(
+      "AUTH_SECRET must be configured before using portal links.",
+    );
   }
 
   return new TextEncoder().encode(env.AUTH_SECRET);
@@ -30,7 +32,7 @@ export async function signPortalToken(input: {
   })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("120d")
+    .setExpirationTime("14d")
     .sign(getSecret());
 }
 

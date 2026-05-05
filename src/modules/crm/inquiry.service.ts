@@ -3,9 +3,12 @@ import "server-only";
 import { UserStatus } from "@prisma/client";
 
 import { db } from "@/lib/db";
+import { hasPermission, type UserRole } from "@/modules/auth/roles";
 import {
+  ConvertInquiryInput,
   createInquirySchema,
   updateInquiryStageSchema,
+  type ConvertInquiryInputType,
   type CreateInquiryInput,
   type UpdateInquiryStageInput,
 } from "./inquiry.schemas";
@@ -50,5 +53,23 @@ export class InquiryService {
     }
 
     return result;
+  }
+
+  async convertToCustomer(
+    factoryId: string,
+    actor: { userId: string; role: UserRole },
+    inquiryId: string,
+    input: ConvertInquiryInputType,
+  ) {
+    if (!hasPermission(actor.role, "crm:manage")) {
+      throw new Error("Not allowed to convert inquiries.");
+    }
+    const parsed = ConvertInquiryInput.parse(input);
+    return this.repository.convertToCustomer(
+      factoryId,
+      actor.userId,
+      inquiryId,
+      parsed,
+    );
   }
 }

@@ -1,9 +1,9 @@
 import { NextRequest } from "next/server";
 
 import { db } from "@/lib/db";
-import { ok, fail } from "@/lib/http/api-response";
+import { ok } from "@/lib/http/api-response";
 import { withRouteErrorHandling } from "@/lib/http/route";
-import { getSession } from "@/modules/auth/session";
+import { requireApiPermission } from "@/modules/auth/api-guard";
 
 export type SearchResult = {
   id: string;
@@ -17,17 +17,15 @@ const TAKE = 5;
 
 export async function GET(request: NextRequest) {
   return withRouteErrorHandling(async () => {
-    const session = await getSession();
-    if (!session) {
-      return fail("Authentication required", 401);
-    }
+    const access = await requireApiPermission("search:view");
+    if (!access.ok) return access.response;
 
     const q = (request.nextUrl.searchParams.get("q") ?? "").trim();
     if (q.length < 1) {
       return ok<SearchResult[]>([]);
     }
 
-    const factoryId = session.factoryId;
+    const factoryId = access.session.factoryId;
     const insensitive = { contains: q, mode: "insensitive" as const };
 
     const [projects, tasks, customers, orders] = await Promise.all([

@@ -9,6 +9,8 @@ export const createCustomerSchema = z.object({
   notes: z.string().max(1000).optional().or(z.literal("")),
 });
 
+export const updateCustomerSchema = createCustomerSchema.partial();
+
 export const customerListItemSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -21,5 +23,13 @@ export const customerListItemSchema = z.object({
   createdAt: z.string(),
 });
 
+export const customerDetailSchema = customerListItemSchema.extend({
+  taxNumber: z.string().nullable(),
+  address: z.string().nullable(),
+  updatedAt: z.string(),
+});
+
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
+export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 export type CustomerListItem = z.infer<typeof customerListItemSchema>;
+export type CustomerDetail = z.infer<typeof customerDetailSchema>;

@@ -12,12 +12,22 @@ import { useEffect, useRef, useState } from "react";
 
 import { BottomSheet } from "@/components/ui";
 import { useIsMobile } from "@/lib/hooks/use-is-mobile";
+import { formatSAR } from "@/lib/format";
 import {
   COST_CATEGORY_LABELS_AR,
   COST_CATEGORY_VALUES,
   type CostCategory,
 } from "@/modules/finance/cost.schemas";
 import type { StageInstanceItem } from "@/modules/projects/project.schemas";
+
+export interface AvailableQuoteLine {
+  id: string;
+  description: string;
+  quoteVersion: number;
+  quoteStatus: string;
+  unitPrice: string;
+  quantity: string;
+}
 
 const STAGE_STATUS_LABELS_AR: Record<string, string> = {
   NOT_STARTED: "لم تبدأ",
@@ -27,6 +37,12 @@ const STAGE_STATUS_LABELS_AR: Record<string, string> = {
   SKIPPED: "متجاوزة",
 };
 
+export interface AvailableVendor {
+  id: string;
+  name: string;
+  code: string | null;
+}
+
 interface AddCostDialogProps {
   projectId: string;
   projectCode: string;
@@ -34,6 +50,9 @@ interface AddCostDialogProps {
   stageInstances?: StageInstanceItem[];
   defaultStageInstanceId?: string | null;
   locations?: { id: string; name: string; code: string | null }[];
+  availableQuoteLines?: AvailableQuoteLine[];
+  availableVendors?: AvailableVendor[];
+  orderId?: string | null;
   onClose: () => void;
   onCreated: () => void | Promise<void>;
 }
@@ -49,6 +68,9 @@ export function AddCostDialog({
   stageInstances = [],
   defaultStageInstanceId = null,
   locations = [],
+  availableQuoteLines = [],
+  availableVendors = [],
+  orderId = null,
   onClose,
   onCreated,
 }: AddCostDialogProps) {
@@ -57,11 +79,97 @@ export function AddCostDialog({
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [vendor, setVendor] = useState("");
+  const [vendorId, setVendorId] = useState<string | null>(null);
+  const [vendorQuery, setVendorQuery] = useState("");
+  const [vendorSuggestOpen, setVendorSuggestOpen] = useState(false);
+  const [vendorList, setVendorList] =
+    useState<AvailableVendor[]>(availableVendors);
+  const [showQuickVendor, setShowQuickVendor] = useState(false);
+  const [quickVendorName, setQuickVendorName] = useState("");
+  const [quickVendorPhone, setQuickVendorPhone] = useState("");
+  const [quickVendorSaving, setQuickVendorSaving] = useState(false);
+  const [quickVendorError, setQuickVendorError] = useState<string | null>(null);
+
+  // Re-sync local vendor list whenever the parent passes a new array.
+  useEffect(() => {
+    setVendorList(availableVendors);
+  }, [availableVendors]);
+
+  const vendorMatches =
+    vendorQuery.trim().length === 0
+      ? vendorList.slice(0, 8)
+      : vendorList
+          .filter((v) => {
+            const q = vendorQuery.trim().toLowerCase();
+            return (
+              v.name.toLowerCase().includes(q) ||
+              (v.code ?? "").toLowerCase().includes(q)
+            );
+          })
+          .slice(0, 8);
+
+  function pickVendor(v: AvailableVendor) {
+    setVendorId(v.id);
+    setVendor(v.name);
+    setVendorQuery(v.name);
+    setVendorSuggestOpen(false);
+  }
+
+  function clearVendorPick() {
+    setVendorId(null);
+  }
+
+  async function submitQuickVendor() {
+    setQuickVendorError(null);
+    if (quickVendorName.trim().length < 2) {
+      setQuickVendorError("اكتب اسم المورد");
+      return;
+    }
+    setQuickVendorSaving(true);
+    try {
+      const r = await fetch(`/api/v1/vendors`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: quickVendorName.trim(),
+          phone: quickVendorPhone.trim() || undefined,
+        }),
+      });
+      const json = await r.json();
+      if (!r.ok || !json.ok) {
+        setQuickVendorError(json?.error?.message ?? "تعذّر إنشاء المورد");
+        return;
+      }
+      const created = json.data as {
+        id: string;
+        name: string;
+        code: string | null;
+      };
+      const newVendor: AvailableVendor = {
+        id: created.id,
+        name: created.name,
+        code: created.code ?? null,
+      };
+      setVendorList((prev) => [
+        newVendor,
+        ...prev.filter((v) => v.id !== newVendor.id),
+      ]);
+      pickVendor(newVendor);
+      setShowQuickVendor(false);
+      setQuickVendorName("");
+      setQuickVendorPhone("");
+    } catch (e) {
+      setQuickVendorError(e instanceof Error ? e.message : "خطأ في الاتصال");
+    } finally {
+      setQuickVendorSaving(false);
+    }
+  }
   const [taskId, setTaskId] = useState<string>("");
   const [stageInstanceId, setStageInstanceId] = useState<string>(
     defaultStageInstanceId ?? "",
   );
   const [locationId, setLocationId] = useState<string>("");
+  const [quoteLineId, setQuoteLineId] = useState<string>("");
   const [incurredAt, setIncurredAt] = useState<string>(todayDate());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -102,10 +210,12 @@ export function AddCostDialog({
           category,
           amount: amt,
           description: description.trim(),
+          vendorId: vendorId ?? undefined,
           vendorName: vendor.trim() || undefined,
           taskId: taskId || undefined,
           stageInstanceId: stageInstanceId || undefined,
           locationId: locationId || undefined,
+          quoteLineId: quoteLineId || undefined,
           incurredAt: new Date(incurredAt).toISOString(),
         }),
       });
@@ -166,16 +276,115 @@ export function AddCostDialog({
       </label>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="block text-sm">
-          المورد (اختياري)
-          <input
-            value={vendor}
-            onChange={(e) => setVendor(e.target.value)}
-            placeholder="اسم المورد"
-            className="mt-1 w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
-            style={{ borderColor: "var(--border)" }}
-          />
-        </label>
+        <div className="block text-sm">
+          <div className="flex items-center justify-between">
+            <span>المورد (اختياري)</span>
+            <button
+              type="button"
+              onClick={() => setShowQuickVendor((v) => !v)}
+              className="text-xs text-[var(--accent)] hover:underline"
+            >
+              + مورد جديد سريع
+            </button>
+          </div>
+          <div className="relative mt-1">
+            <input
+              value={vendorQuery}
+              onChange={(e) => {
+                setVendorQuery(e.target.value);
+                setVendor(e.target.value);
+                if (vendorId) clearVendorPick();
+                setVendorSuggestOpen(true);
+              }}
+              onFocus={() => setVendorSuggestOpen(true)}
+              onBlur={() => setTimeout(() => setVendorSuggestOpen(false), 150)}
+              placeholder={
+                vendorList.length > 0 ? "ابحث أو اكتب اسم المورد" : "اسم المورد"
+              }
+              className="w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
+              style={{ borderColor: "var(--border)" }}
+            />
+            {vendorId ? (
+              <span className="absolute end-2 top-1/2 -translate-y-1/2 text-[10px] rounded-full bg-[var(--tone-planned-bg)] px-2 py-0.5 text-[var(--tone-planned-fg)]">
+                مرتبط
+              </span>
+            ) : null}
+            {vendorSuggestOpen && vendorMatches.length > 0 ? (
+              <ul
+                className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-xl border bg-[var(--panel)] shadow-lg"
+                style={{ borderColor: "var(--border)" }}
+                role="listbox"
+              >
+                {vendorMatches.map((v) => (
+                  <li key={v.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault();
+                        pickVendor(v);
+                      }}
+                      className="flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-sm hover:bg-[var(--panel-strong)]"
+                    >
+                      <span>{v.name}</span>
+                      {v.code ? (
+                        <span className="text-xs text-[var(--muted-foreground)]">
+                          {v.code}
+                        </span>
+                      ) : null}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+          {showQuickVendor ? (
+            <div
+              className="mt-2 space-y-2 rounded-xl border border-dashed p-3"
+              style={{ borderColor: "var(--border)" }}
+            >
+              <input
+                value={quickVendorName}
+                onChange={(e) => setQuickVendorName(e.target.value)}
+                placeholder="اسم المورد"
+                className="w-full rounded-lg border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[40px]"
+                style={{ borderColor: "var(--border)" }}
+              />
+              <input
+                value={quickVendorPhone}
+                onChange={(e) => setQuickVendorPhone(e.target.value)}
+                placeholder="رقم الجوال (اختياري)"
+                inputMode="tel"
+                className="w-full rounded-lg border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[40px]"
+                style={{ borderColor: "var(--border)" }}
+              />
+              {quickVendorError ? (
+                <p className="text-xs text-[var(--tone-blocked-fg)]">
+                  {quickVendorError}
+                </p>
+              ) : null}
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowQuickVendor(false);
+                    setQuickVendorError(null);
+                  }}
+                  className="text-xs text-[var(--muted-foreground)] hover:underline"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={submitQuickVendor}
+                  disabled={quickVendorSaving}
+                  className="button-secondary text-xs disabled:opacity-60"
+                >
+                  {quickVendorSaving ? "جاري الحفظ…" : "إضافة سريعة"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+        </div>
         <label className="block text-sm">
           التاريخ
           <input
@@ -240,12 +449,44 @@ export function AddCostDialog({
             <option value="">— بدون موقع —</option>
             {locations.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.name}{l.code ? ` · ${l.code}` : ""}
+                {l.name}
+                {l.code ? ` · ${l.code}` : ""}
               </option>
             ))}
           </select>
         </label>
       ) : null}
+
+      {availableQuoteLines.length > 0 ? (
+        <label className="block text-sm">
+          اربط ببند عرض سعر (اختياري)
+          <select
+            value={quoteLineId}
+            onChange={(e) => setQuoteLineId(e.target.value)}
+            className="mt-1 w-full rounded-xl border bg-[var(--panel-strong)] px-3 py-2 text-sm min-h-[44px]"
+            style={{ borderColor: "var(--border)" }}
+          >
+            <option value="">— بدون ربط —</option>
+            {availableQuoteLines.map((l) => {
+              const sell = Number(l.unitPrice) * Number(l.quantity);
+              return (
+                <option key={l.id} value={l.id}>
+                  {`v${l.quoteVersion}: ${l.description} (سعر: ${formatSAR(sell.toFixed(2))})`}
+                </option>
+              );
+            })}
+          </select>
+        </label>
+      ) : (
+        <p
+          className="rounded-xl border border-dashed px-3 py-2 text-xs text-[var(--muted-foreground)]"
+          style={{ borderColor: "var(--border)" }}
+        >
+          {orderId
+            ? "لا يوجد عرض سعر معتمد لهذا الطلب — أضف تكلفة بدون ربط"
+            : "هذا المشروع غير مرتبط بطلب — أضف تكلفة بدون ربط ببند عرض سعر"}
+        </p>
+      )}
 
       {error ? (
         <p className="text-sm text-[var(--tone-blocked-fg)]">{error}</p>

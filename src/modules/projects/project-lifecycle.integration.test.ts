@@ -39,11 +39,18 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     worker1: { id: string };
     worker2: { id: string };
   };
-  let stageTemplateIds: string[] = [];
+  const stageTemplateIds: string[] = [];
   let projectId: string;
   let projectCode: string;
   let project2Id: string;
-  let stageInstances: Array<{ id: string; slug: string; name: string; sortOrder: number; status: string; requiresDepositAttestation: boolean }>;
+  let stageInstances: Array<{
+    id: string;
+    slug: string;
+    name: string;
+    sortOrder: number;
+    status: string;
+    requiresDepositAttestation: boolean;
+  }>;
   let locationIds: {
     default: string;
     bedroom: string;
@@ -55,12 +62,12 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
   };
   let taskIds: {
     stageAndBedroom: string; // task in stage1 + bedroom
-    stageAndMajlis: string;  // task in stage3 + majlis
-    kitchenNoStage: string;  // kitchen, no stage, URGENT
-    approval: string;        // requiresApproval
-    bare: string;            // no assignee, no location, no stage
+    stageAndMajlis: string; // task in stage3 + majlis
+    kitchenNoStage: string; // kitchen, no stage, URGENT
+    approval: string; // requiresApproval
+    bare: string; // no assignee, no location, no stage
   };
-  let queueItemIds: string[] = [];
+  const queueItemIds: string[] = [];
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
@@ -102,9 +109,21 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     });
     factoryId = factory.id;
 
-    const createUser = (email: string, firstName: string, lastName: string, role: string) =>
+    const createUser = (
+      email: string,
+      firstName: string,
+      lastName: string,
+      role: string,
+    ) =>
       prisma.user.create({
-        data: { factoryId, email, firstName, lastName, role: role as never, status: "ACTIVE" },
+        data: {
+          factoryId,
+          email,
+          firstName,
+          lastName,
+          role: role as never,
+          status: "ACTIVE",
+        },
       });
 
     const [owner, fm, sup, w1, w2] = await Promise.all([
@@ -136,7 +155,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const stages = [
       { name: "التصميم", ownerRole: "SALES_MANAGER" as const },
       { name: "الموافقة", ownerRole: "OWNER" as const },
-      { name: "العربون", requiresDepositAttestation: true, ownerRole: "FACTORY_MANAGER" as const },
+      {
+        name: "العربون",
+        requiresDepositAttestation: true,
+        ownerRole: "FACTORY_MANAGER" as const,
+      },
       { name: "التصنيع", isOptional: true },
       { name: "التركيب" },
       { name: "التسليم" },
@@ -210,7 +233,9 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     // getById returns full detail
     const detail = await svc.getById(factoryId, projectId);
     expect(detail.tasks).toHaveLength(0);
-    expect(detail.activities.some((a) => a.type === "PROJECT_CREATED")).toBe(true);
+    expect(detail.activities.some((a) => a.type === "PROJECT_CREATED")).toBe(
+      true,
+    );
   });
 
   // ============================================================
@@ -254,13 +279,13 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     locationIds.template = template.id;
 
     // Clone template 3x
-    const cloneResult = await svc.cloneLocation(
+    const cloneResult = (await svc.cloneLocation(
       factoryId,
       users.owner.id,
       template.id,
       projectId,
       { count: 3, namePrefix: "غرفة نوم" },
-    ) as { count: number; ids: string[] };
+    )) as { count: number; ids: string[] };
     locationIds.clones = cloneResult.ids;
     expect(cloneResult.count).toBe(3);
 
@@ -283,7 +308,9 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const allLocs = await svc.listLocations(factoryId, projectId);
     const reorderIds = allLocs.map((l) => l.id);
     reorderIds.reverse();
-    await svc.reorderLocations(factoryId, projectId, { orderedIds: reorderIds });
+    await svc.reorderLocations(factoryId, projectId, {
+      orderedIds: reorderIds,
+    });
     const reordered = await svc.listLocations(factoryId, projectId);
     expect(reordered[0].id).toBe(reorderIds[0]);
 
@@ -371,7 +398,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const svc = new ProjectService();
 
     // Backfill on same project — already has everything
-    const backfill = await svc.backfillProjectStages(factoryId, projectId, users.owner.id);
+    const backfill = await svc.backfillProjectStages(
+      factoryId,
+      projectId,
+      users.owner.id,
+    );
     expect(backfill.createdInstances).toBe(0);
     expect(backfill.createdLocations).toBe(0);
 
@@ -401,7 +432,13 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
       locationId: locationIds.bedroom,
       assignedToUserId: users.worker1.id,
     });
-    taskIds = { stageAndBedroom: t1.id, stageAndMajlis: "", kitchenNoStage: "", approval: "", bare: "" };
+    taskIds = {
+      stageAndBedroom: t1.id,
+      stageAndMajlis: "",
+      kitchenNoStage: "",
+      approval: "",
+      bare: "",
+    };
 
     // Task in stage 3 + majlis, assigned to worker2
     const t2 = await svc.createTask(factoryId, users.owner.id, {
@@ -450,17 +487,47 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const svc = new ProjectService();
 
     // Happy path: BACKLOG → IN_PROGRESS → DONE (bare task)
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.bare, "IN_PROGRESS");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.bare,
+      "IN_PROGRESS",
+    );
     await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.bare, "DONE");
 
     // BLOCKED flow: kitchen task
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.kitchenNoStage, "IN_PROGRESS");
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.kitchenNoStage, "BLOCKED");
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.kitchenNoStage, "IN_PROGRESS");
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.kitchenNoStage, "DONE");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.kitchenNoStage,
+      "IN_PROGRESS",
+    );
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.kitchenNoStage,
+      "BLOCKED",
+    );
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.kitchenNoStage,
+      "IN_PROGRESS",
+    );
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.kitchenNoStage,
+      "DONE",
+    );
 
     // CANCELLED: stage+majlis task
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.stageAndMajlis, "CANCELLED");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndMajlis,
+      "CANCELLED",
+    );
 
     // Invalid: DONE → IN_PROGRESS (bare task is DONE)
     // The system allows any status update via updateTaskStatus (it's not gated by transitions)
@@ -471,9 +538,16 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(bareTask?.completedAt).toBeTruthy();
 
     // PLANNED_TODAY sync: verify setting status to PLANNED_TODAY creates a queue item
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.stageAndBedroom, "PLANNED_TODAY");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      "PLANNED_TODAY",
+    );
     const detailAfter = await svc.getById(factoryId, projectId);
-    const bedroomTask = detailAfter.tasks.find((t) => t.id === taskIds.stageAndBedroom);
+    const bedroomTask = detailAfter.tasks.find(
+      (t) => t.id === taskIds.stageAndBedroom,
+    );
     expect(bedroomTask?.status).toBe("PLANNED_TODAY");
     expect(bedroomTask?.todayQueueItem).toBeTruthy();
   });
@@ -485,8 +559,18 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const svc = new ProjectService();
 
     // Move approval task to WAITING_APPROVAL
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.approval, "IN_PROGRESS");
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.approval, "WAITING_APPROVAL");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.approval,
+      "IN_PROGRESS",
+    );
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.approval,
+      "WAITING_APPROVAL",
+    );
 
     // WORKER tries to approve → 403
     await expect(
@@ -501,16 +585,27 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     await svc.reviewTask(
       factoryId,
       { userId: users.owner.id, role: "OWNER" as never },
-      { taskId: taskIds.approval, decision: "reject", note: "يحتاج تعديل اللون" },
+      {
+        taskId: taskIds.approval,
+        decision: "reject",
+        note: "يحتاج تعديل اللون",
+      },
     );
 
-    let task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.approval } });
+    let task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.approval },
+    });
     expect(task.status).toBe("IN_PROGRESS");
     expect(task.approvalStatus).toBe("REJECTED");
     expect(task.rejectedReason).toBe("يحتاج تعديل اللون");
 
     // Re-submit for approval
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.approval, "WAITING_APPROVAL");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.approval,
+      "WAITING_APPROVAL",
+    );
 
     // SUPERVISOR approves
     await svc.reviewTask(
@@ -519,7 +614,9 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
       { taskId: taskIds.approval, decision: "approve" },
     );
 
-    task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.approval } });
+    task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.approval },
+    });
     expect(task.status).toBe("DONE");
     expect(task.approvalStatus).toBe("APPROVED");
     expect(task.completedAt).toBeTruthy();
@@ -533,8 +630,15 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
 
     // bedroom task is already PLANNED_TODAY from test 8, with a queue item.
     // Delete existing queue items so we start fresh.
-    await prisma.workQueueItem.deleteMany({ where: { taskId: taskIds.stageAndBedroom } });
-    await svc.updateTaskStatus(factoryId, users.owner.id, taskIds.stageAndBedroom, "BACKLOG");
+    await prisma.workQueueItem.deleteMany({
+      where: { taskId: taskIds.stageAndBedroom },
+    });
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      "BACKLOG",
+    );
 
     // Add to today
     const q1 = await svc.addTaskToToday(factoryId, users.owner.id, {
@@ -545,7 +649,9 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     queueItemIds.push(q1.id);
 
     // Verify task status changed to PLANNED_TODAY
-    let task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.stageAndBedroom } });
+    const task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.stageAndBedroom },
+    });
     expect(task.status).toBe("PLANNED_TODAY");
 
     // Duplicate prevention
@@ -621,7 +727,7 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
       workDate: today,
     });
     // Also add the same task for tomorrow
-    const qDupe2 = await svc.addTaskToToday(factoryId, users.owner.id, {
+    const _qDupe2 = await svc.addTaskToToday(factoryId, users.owner.id, {
       taskId: dupeTestTask.id,
       workDate: tomorrow,
     });
@@ -634,13 +740,20 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     ).rejects.toThrow(/already scheduled/);
 
     // FACTORY_MANAGER can also approve (using the second approval task)
-    await svc.updateTaskStatus(factoryId, users.owner.id, approvalTask2.id, "WAITING_APPROVAL");
+    await svc.updateTaskStatus(
+      factoryId,
+      users.owner.id,
+      approvalTask2.id,
+      "WAITING_APPROVAL",
+    );
     await svc.reviewTask(
       factoryId,
       { userId: users.factoryManager.id, role: "FACTORY_MANAGER" as never },
       { taskId: approvalTask2.id, decision: "approve" },
     );
-    const fmApproved = await prisma.projectTask.findUniqueOrThrow({ where: { id: approvalTask2.id } });
+    const fmApproved = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: approvalTask2.id },
+    });
     expect(fmApproved.status).toBe("DONE");
     expect(fmApproved.approvalStatus).toBe("APPROVED");
   });
@@ -652,37 +765,78 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const svc = new ProjectService();
 
     // Move task to different location: bedroom → kitchen
-    await svc.updateTaskLocation(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      locationId: locationIds.kitchen,
+    await svc.updateTaskLocation(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        locationId: locationIds.kitchen,
+      },
+    );
+    let task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.stageAndBedroom },
     });
-    let task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.stageAndBedroom } });
-    expect((task as unknown as { locationId: string }).locationId).toBe(locationIds.kitchen);
+    expect((task as unknown as { locationId: string }).locationId).toBe(
+      locationIds.kitchen,
+    );
 
     // Remove task location
-    await svc.updateTaskLocation(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      locationId: null,
+    await svc.updateTaskLocation(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        locationId: null,
+      },
+    );
+    task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.stageAndBedroom },
     });
-    task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.stageAndBedroom } });
-    expect((task as unknown as { locationId: string | null }).locationId).toBeNull();
+    expect(
+      (task as unknown as { locationId: string | null }).locationId,
+    ).toBeNull();
 
     // Move task to different stage: stage 1 → stage 3
-    await svc.updateTaskStage(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      stageInstanceId: stageInstances[2].id,
+    await svc.updateTaskStage(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        stageInstanceId: stageInstances[2].id,
+      },
+    );
+    task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.stageAndBedroom },
     });
-    task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.stageAndBedroom } });
-    expect((task as unknown as { stageInstanceId: string }).stageInstanceId).toBe(stageInstances[2].id);
+    expect(
+      (task as unknown as { stageInstanceId: string }).stageInstanceId,
+    ).toBe(stageInstances[2].id);
 
     // Remove task stage
-    await svc.updateTaskStage(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      stageInstanceId: null,
+    await svc.updateTaskStage(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        stageInstanceId: null,
+      },
+    );
+    task = await prisma.projectTask.findUniqueOrThrow({
+      where: { id: taskIds.stageAndBedroom },
     });
-    task = await prisma.projectTask.findUniqueOrThrow({ where: { id: taskIds.stageAndBedroom } });
-    expect((task as unknown as { stageInstanceId: string | null }).stageInstanceId).toBeNull();
+    expect(
+      (task as unknown as { stageInstanceId: string | null }).stageInstanceId,
+    ).toBeNull();
 
     // Assign a task to kitchen so deletion fails
-    await svc.updateTaskLocation(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      locationId: locationIds.kitchen,
-    });
+    await svc.updateTaskLocation(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        locationId: locationIds.kitchen,
+      },
+    );
 
     // Delete location with tasks → 409
     await expect(
@@ -697,17 +851,26 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const svc = new ProjectService();
 
     // Move bedroom task to project 2
-    await svc.moveTaskToProject(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-      targetProjectId: project2Id,
-    });
+    await svc.moveTaskToProject(
+      factoryId,
+      users.owner.id,
+      taskIds.stageAndBedroom,
+      {
+        targetProjectId: project2Id,
+      },
+    );
 
     // Verify removed from project 1
     const detail1 = await svc.getById(factoryId, projectId);
-    expect(detail1.tasks.find((t) => t.id === taskIds.stageAndBedroom)).toBeUndefined();
+    expect(
+      detail1.tasks.find((t) => t.id === taskIds.stageAndBedroom),
+    ).toBeUndefined();
 
     // Verify appears in project 2
     const detail2 = await svc.getById(factoryId, project2Id);
-    expect(detail2.tasks.find((t) => t.id === taskIds.stageAndBedroom)).toBeDefined();
+    expect(
+      detail2.tasks.find((t) => t.id === taskIds.stageAndBedroom),
+    ).toBeDefined();
 
     // Verify queue items deleted
     const queueItems = await prisma.workQueueItem.findMany({
@@ -727,9 +890,14 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
 
     // Error: move to same project
     await expect(
-      svc.moveTaskToProject(factoryId, users.owner.id, taskIds.stageAndBedroom, {
-        targetProjectId: project2Id,
-      }),
+      svc.moveTaskToProject(
+        factoryId,
+        users.owner.id,
+        taskIds.stageAndBedroom,
+        {
+          targetProjectId: project2Id,
+        },
+      ),
     ).rejects.toThrow(/already in the target project/);
   });
 
@@ -786,8 +954,18 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
 
     // Add 5 costs
     const costs = [
-      { category: "MATERIAL", amount: "5000.00", description: "خشب زان", locationId: locationIds.majlis },
-      { category: "LABOR", amount: "3000.00", description: "أجرة نجار", stageInstanceId: stageInstances[0].id },
+      {
+        category: "MATERIAL",
+        amount: "5000.00",
+        description: "خشب زان",
+        locationId: locationIds.majlis,
+      },
+      {
+        category: "LABOR",
+        amount: "3000.00",
+        description: "أجرة نجار",
+        stageInstanceId: stageInstances[0].id,
+      },
       { category: "SERVICE", amount: "2000.00", description: "خدمة نقل" },
       { category: "OVERHEAD", amount: "1000.00", description: "كهرباء" },
       { category: "OTHER", amount: "500.00", description: "متفرقات" },
@@ -813,11 +991,19 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     }
 
     // List by project
-    const list = await costSvc.listByProject(factoryId, "OWNER" as never, projectId);
+    const list = await costSvc.listByProject(
+      factoryId,
+      "OWNER" as never,
+      projectId,
+    );
     expect(list).toHaveLength(5);
 
     // Summary by project
-    const summary = await costSvc.summaryByProject(factoryId, "OWNER" as never, projectId);
+    const summary = await costSvc.summaryByProject(
+      factoryId,
+      "OWNER" as never,
+      projectId,
+    );
     expect(summary.totalCost).toBe("11500.00");
     expect(summary.costsByCategory.MATERIAL).toBe("5000.00");
 
@@ -828,7 +1014,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
       costIds[3], // OVERHEAD
     );
 
-    const summaryAfter = await costSvc.summaryByProject(factoryId, "OWNER" as never, projectId);
+    const summaryAfter = await costSvc.summaryByProject(
+      factoryId,
+      "OWNER" as never,
+      projectId,
+    );
     expect(summaryAfter.totalCost).toBe("10500.00");
 
     // COST_DELETED activity
@@ -854,13 +1044,19 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     ).rejects.toMatchObject({ status: 403 });
 
     // FACTORY_MANAGER can VIEW but NOT create/delete
-    const fmList = await costSvc.listByProject(factoryId, "FACTORY_MANAGER" as never, projectId);
+    const fmList = await costSvc.listByProject(
+      factoryId,
+      "FACTORY_MANAGER" as never,
+      projectId,
+    );
     expect(fmList.length).toBeGreaterThan(0);
 
+    // WORKER has no costs:manage permission — denial check (FACTORY_MANAGER
+    // is the all-powerful manager role and intentionally has all permissions).
     await expect(
       costSvc.create(
         factoryId,
-        { userId: users.factoryManager.id, role: "FACTORY_MANAGER" as never },
+        { userId: users.worker1.id, role: "WORKER" as never },
         {
           projectId,
           amount: "100.00",
@@ -891,7 +1087,7 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(comment1.body).toBe("يرجى مراجعة العمل المنجز");
 
     // Create comment with @mention (محمد = supervisor's firstName)
-    const comment2 = await commentSvc.create(
+    const _comment2 = await commentSvc.create(
       factoryId,
       { userId: users.owner.id, role: "OWNER" as never },
       projectId,
@@ -901,7 +1097,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
 
     // Verify COMMENT_ADDED activity
     const commentActivities = await prisma.projectActivity.findMany({
-      where: { projectId, type: "COMMENT_ADDED" as never, taskId: taskIds.kitchenNoStage },
+      where: {
+        projectId,
+        type: "COMMENT_ADDED" as never,
+        taskId: taskIds.kitchenNoStage,
+      },
     });
     expect(commentActivities.length).toBeGreaterThanOrEqual(2);
 
@@ -918,7 +1118,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(notifications.length).toBeGreaterThan(0);
 
     // List comments
-    const comments = await commentSvc.listByTask(factoryId, "OWNER" as never, taskIds.kitchenNoStage);
+    const comments = await commentSvc.listByTask(
+      factoryId,
+      "OWNER" as never,
+      taskIds.kitchenNoStage,
+    );
     expect(comments.length).toBeGreaterThanOrEqual(2);
 
     // Delete comment
@@ -927,7 +1131,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
       { userId: users.owner.id, role: "OWNER" as never },
       comment1.id,
     );
-    const after = await commentSvc.listByTask(factoryId, "OWNER" as never, taskIds.kitchenNoStage);
+    const after = await commentSvc.listByTask(
+      factoryId,
+      "OWNER" as never,
+      taskIds.kitchenNoStage,
+    );
     expect(after.find((c) => c.id === comment1.id)).toBeUndefined();
   });
 
@@ -958,7 +1166,10 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(addedActivities.length).toBeGreaterThan(0);
 
     // List by task
-    const taskAtts = await attachRepo.listByTask(factoryId, taskIds.kitchenNoStage);
+    const taskAtts = await attachRepo.listByTask(
+      factoryId,
+      taskIds.kitchenNoStage,
+    );
     expect(taskAtts.length).toBeGreaterThan(0);
     expect(taskAtts[0].filename).toBe("floor-plan.pdf");
 
@@ -982,7 +1193,10 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(removedActivities.length).toBeGreaterThan(0);
 
     // List after delete
-    const afterDelete = await attachRepo.listByTask(factoryId, taskIds.kitchenNoStage);
+    const afterDelete = await attachRepo.listByTask(
+      factoryId,
+      taskIds.kitchenNoStage,
+    );
     expect(afterDelete.find((a) => a.id === att.id)).toBeUndefined();
   });
 
@@ -1058,10 +1272,16 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     const detail = await svc.getById(factoryId, projectId);
     // We have some done, some cancelled tasks — the refreshProjectStatus
     // should have been called. Let's verify the status is reasonable.
-    expect(["IN_PROGRESS", "COMPLETED", "BLOCKED", "READY", "PLANNING"].includes(detail.status)).toBe(true);
+    expect(
+      ["IN_PROGRESS", "COMPLETED", "BLOCKED", "READY", "PLANNING"].includes(
+        detail.status,
+      ),
+    ).toBe(true);
 
     // Make all remaining non-done/cancelled tasks DONE
-    const openTasks = detail.tasks.filter((t) => !["DONE", "CANCELLED"].includes(t.status));
+    const openTasks = detail.tasks.filter(
+      (t) => !["DONE", "CANCELLED"].includes(t.status),
+    );
     for (const t of openTasks) {
       await svc.updateTaskStatus(factoryId, users.owner.id, t.id, "DONE");
     }
@@ -1089,11 +1309,11 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     expect(imported.code).toMatch(/^PRJ-\d{5}$/);
 
     // Create tasks in the "imported" project
-    const t1 = await svc.createTask(factoryId, users.owner.id, {
+    const _t1 = await svc.createTask(factoryId, users.owner.id, {
       projectId: imported.id,
       title: "مهمة مستوردة 1",
     });
-    const t2 = await svc.createTask(factoryId, users.owner.id, {
+    const _t2 = await svc.createTask(factoryId, users.owner.id, {
       projectId: imported.id,
       title: "مهمة مستوردة 2",
     });
@@ -1104,7 +1324,9 @@ describeLifecycle("Project Full Lifecycle — DB-backed", () => {
     detail.tasks.forEach((t) => expect(t.status).toBe("BACKLOG"));
 
     // Verify PROJECT_CREATED activity
-    expect(detail.activities.some((a) => a.type === "PROJECT_CREATED")).toBe(true);
+    expect(detail.activities.some((a) => a.type === "PROJECT_CREATED")).toBe(
+      true,
+    );
 
     // Verify stages auto-created
     expect(detail.stageInstances).toHaveLength(6);

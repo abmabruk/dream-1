@@ -1,0 +1,70 @@
+name: DB Migrate (manual)
+
+# Manually triggered. Targets a specific environment.
+# Requires the DATABASE_URL secret to be set in the chosen environment.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+          - staging
+      dry_run:
+        description: "Preview migrations without applying"
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  migrate:
+    name: Apply migrations
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }} # GHA env requires manual approval (set protection rules)
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: List pending migrations
+        run: |
+          echo "::group::Pending migrations"
+          npx prisma migrate status
+          echo "::endgroup::"
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Apply migrations (dry-run)
+        if: ${{ inputs.dry_run }}
+        run: |
+          echo "Dry run requested — listing migrations only, not applying."
+          npx prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Apply migrations
+        if: ${{ !inputs.dry_run }}
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Confirm post-migrate status
+        run: npx prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

@@ -17,6 +17,7 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Local git worktrees can contain their own builds — skip them.
     ".worktrees/**",
+    ".claude/worktrees/**",
   ]),
 ]);
 

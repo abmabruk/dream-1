@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { emptyStringToUndefined } from "@/lib/zod-helpers";
+
 import { ORDER_STATUS_VALUES } from "./order-status";
 
 export const orderStatusSchema = z.enum(ORDER_STATUS_VALUES);
@@ -7,8 +9,8 @@ export const orderStatusSchema = z.enum(ORDER_STATUS_VALUES);
 export const createOrderSchema = z.object({
   customerId: z.string().min(1),
   title: z.string().min(3).max(160),
-  description: z.string().max(5000).optional(),
-  targetDate: z.string().min(1).optional(),
+  description: emptyStringToUndefined(z.string().max(5000).optional()),
+  targetDate: emptyStringToUndefined(z.string().min(1).optional()),
   quotedAmount: z.number().nonnegative().optional(),
 });
 
@@ -82,7 +84,7 @@ export const orderDetailSchema = z.object({
 export const updateOrderStatusSchema = z.object({
   orderId: z.string().min(1),
   status: orderStatusSchema,
-  note: z.string().max(1000).optional(),
+  note: emptyStringToUndefined(z.string().max(1000).optional()),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;

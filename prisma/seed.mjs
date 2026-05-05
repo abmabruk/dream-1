@@ -25,6 +25,18 @@ function hashPassword(password) {
 }
 
 async function main() {
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_PROD_SEED !== "true") {
+    console.error("Refusing to seed production. Set ALLOW_PROD_SEED=true to override.");
+    process.exit(1);
+  }
+
+  const initialPassword = process.env.INITIAL_ADMIN_PASSWORD || "dream12345";
+
+  if (initialPassword === "dream12345" && process.env.NODE_ENV === "production") {
+    console.error("Refusing to seed production with the default weak password. Set INITIAL_ADMIN_PASSWORD to a strong value.");
+    process.exit(1);
+  }
+
   const factory = await prisma.factory.upsert({
     where: { slug: "dream-main" },
     update: {
@@ -91,7 +103,7 @@ async function main() {
       create: {
         factoryId: factory.id,
         email: user.email,
-        passwordHash: hashPassword("dream12345"),
+        passwordHash: hashPassword(initialPassword),
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
@@ -176,7 +188,9 @@ async function main() {
 
   console.log("Seeded default owner account:");
   console.log("email: owner@dream1.local");
-  console.log("password: dream12345");
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`(dev only) seed password: ${initialPassword}`);
+  }
   console.log(`Seeded ${defaultStages.length} default project stages.`);
 }
 

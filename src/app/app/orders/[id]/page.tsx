@@ -13,6 +13,7 @@ import { UserService } from "@/modules/users/user.service";
 
 import { CreatePortalAccessForm } from "./create-portal-access-form";
 import { CreateAssignmentForm } from "./create-assignment-form";
+import { QuotesPanel } from "./quotes-panel";
 import { UpdateOrderStatusForm } from "./update-order-status-form";
 import { formatDateAr, formatSAR } from "@/lib/format";
 
@@ -41,6 +42,11 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const { id } = await params;
   const canUpdateStatus = hasPermission(session.role, "orders:update");
   const canAssign = hasPermission(session.role, "production:assign");
+  const canViewQuotes = hasPermission(session.role, "quotes:view");
+  const canManageQuotes = hasPermission(session.role, "quotes:draft");
+  const canApproveQuotes = hasPermission(session.role, "quotes:approve");
+  const canCancelQuotes = hasPermission(session.role, "quotes:cancel");
+  const canManageInvoices = hasPermission(session.role, "invoices:manage");
 
   const [order, workers] = await Promise.all([
     orderService.getById(session.factoryId, id),
@@ -311,6 +317,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
           </article>
         </div>
       </section>
+
+      {canViewQuotes ? (
+        <QuotesPanel
+          orderId={order.id}
+          canManageQuotes={canManageQuotes}
+          canApproveQuotes={canApproveQuotes}
+          canCancelQuotes={canCancelQuotes}
+          canManageInvoices={canManageInvoices}
+        />
+      ) : null}
     </main>
   );
 }

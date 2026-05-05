@@ -1,5 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { beforeAll, beforeEach, afterAll, describe, expect, it, vi } from "vitest";
+import {
+  beforeAll,
+  beforeEach,
+  afterAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import {
   AssignmentStatus,
   InquirySource,
@@ -21,8 +29,10 @@ import {
   resetIntegrationDatabase,
 } from "./integration-db";
 
-type OrderServiceClass = typeof import("@/modules/orders/order.service").OrderService;
-type UserServiceClass = typeof import("@/modules/users/user.service").UserService;
+type OrderServiceClass =
+  typeof import("@/modules/orders/order.service").OrderService;
+type UserServiceClass =
+  typeof import("@/modules/users/user.service").UserService;
 type NotificationServiceClass =
   typeof import("@/modules/notifications/notification.service").NotificationService;
 type ProjectServiceClass =
@@ -63,7 +73,8 @@ describeIntegration("database-backed service integration", () => {
 
     ({ OrderService } = await import("@/modules/orders/order.service"));
     ({ UserService } = await import("@/modules/users/user.service"));
-    ({ NotificationService } = await import("@/modules/notifications/notification.service"));
+    ({ NotificationService } =
+      await import("@/modules/notifications/notification.service"));
     ({ ProjectService } = await import("@/modules/projects/project.service"));
   }, 30000);
 
@@ -110,7 +121,7 @@ describeIntegration("database-backed service integration", () => {
         phone: "+966500000010",
         role: "SUPERVISOR",
         password: "dream12345",
-      }
+      },
     );
 
     const storedUser = await prisma.user.findUnique({
@@ -222,7 +233,7 @@ describeIntegration("database-backed service integration", () => {
       service.create(sourceFactory.id, owner.id, {
         customerId: foreignCustomer.id,
         title: "Cross-factory order",
-      })
+      }),
     ).rejects.toThrow("Selected customer does not belong to this factory.");
 
     expect(
@@ -230,7 +241,7 @@ describeIntegration("database-backed service integration", () => {
         where: {
           factoryId: sourceFactory.id,
         },
-      })
+      }),
     ).toBe(0);
   });
 
@@ -399,7 +410,7 @@ describeIntegration("database-backed service integration", () => {
     const service = new NotificationService();
 
     await expect(
-      service.markRead(factory.id, manager.id, "missing-notification")
+      service.markRead(factory.id, manager.id, "missing-notification"),
     ).rejects.toEqual(new HttpError(404, "Notification not found."));
   });
 
@@ -470,7 +481,7 @@ describeIntegration("database-backed service integration", () => {
       {
         taskId: task.id,
         decision: "approve",
-      }
+      },
     );
 
     const storedProject = await prisma.project.findUniqueOrThrow({
@@ -543,9 +554,12 @@ describeIntegration("database-backed service integration", () => {
       service.updateQueueItem(factory.id, manager.id, {
         queueItemId: queueItem.id,
         status: "DONE",
-      })
+      }),
     ).rejects.toEqual(
-      new HttpError(409, "This task requires approval before it can be marked done.")
+      new HttpError(
+        409,
+        "This task requires approval before it can be marked done.",
+      ),
     );
 
     const storedTask = await prisma.projectTask.findUniqueOrThrow({

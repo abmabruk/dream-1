@@ -10,6 +10,13 @@ export const NOTIFICATION_TYPE_VALUES = [
   "TASK_COMMENT",
   "STAGE_STARTED",
   "DEPOSIT_ATTESTED",
+  "QUOTE_APPROVED",
+  "QUOTE_REJECTED",
+  "QUOTE_EXPIRING_SOON",
+  "INVOICE_SENT",
+  "INVOICE_OVERDUE",
+  "INVOICE_PAID",
+  "PAYMENT_RECEIVED",
 ] as const;
 
 export type NotificationStatus = (typeof NOTIFICATION_STATUS_VALUES)[number];
@@ -24,6 +31,13 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   TASK_COMMENT: "تعليق جديد",
   STAGE_STARTED: "بدأت مرحلة جديدة",
   DEPOSIT_ATTESTED: "تم تأكيد العربون",
+  QUOTE_APPROVED: "تم اعتماد عرض السعر",
+  QUOTE_REJECTED: "تم رفض عرض السعر",
+  QUOTE_EXPIRING_SOON: "عرض سعر منتهي الصلاحية",
+  INVOICE_SENT: "تم إصدار فاتورة",
+  INVOICE_OVERDUE: "فاتورة متأخرة",
+  INVOICE_PAID: "تم سداد فاتورة",
+  PAYMENT_RECEIVED: "تم استلام دفعة",
 };
 
 export const notificationListItemSchema = z.object({

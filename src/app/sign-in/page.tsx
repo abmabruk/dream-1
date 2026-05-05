@@ -7,6 +7,12 @@ export default async function SignInPage() {
   const session = await getSession();
 
   if (session) {
+    if (session.role === "CUSTOMER") {
+      redirect("/portal/dashboard");
+    }
+    if (session.role === "WORKER") {
+      redirect("/worker");
+    }
     redirect("/app");
   }
 
@@ -16,7 +22,9 @@ export default async function SignInPage() {
         <p className="text-sm uppercase tracking-[0.24em] text-[var(--muted-foreground)]">
           بوابة الدخول
         </p>
-        <h1 className="mt-3 text-3xl font-semibold">تسجيل الدخول إلى Dream 1</h1>
+        <h1 className="mt-3 text-3xl font-semibold">
+          تسجيل الدخول إلى Dream 1
+        </h1>
         <p className="mt-4 text-base leading-8 text-[var(--muted-foreground)]">
           أدخل بياناتك للوصول إلى منطقة التطبيق المحمية.
         </p>
